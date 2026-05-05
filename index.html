@@ -8,6 +8,11 @@
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#e31010">
 </head>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
+</script>
 <body>
   <div id="app">
     <div class="app-shell">
