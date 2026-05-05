@@ -1,7 +1,7 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "1.6";
+  const APP_VERSION = "1.7";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
