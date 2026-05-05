@@ -1,4 +1,4 @@
-const APP_CACHE_VERSION = "regu-planer-1.9.2";
+const APP_CACHE_VERSION = "regu-planer-2.0";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
