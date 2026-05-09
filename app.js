@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.6";
+  const APP_VERSION = "2.7";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -100,14 +100,7 @@
       entries: [],
       lastUpdate: ""
     },
-    priceList: {
-      company: "",
-      date: "",
-      pdfName: "",
-      pdfData: "",
-      pdfPath: "",
-      entries: []
-    },
+  
     vehicles: [],
     externalBirthdays: [],
     managementAttendance: {},
@@ -115,8 +108,15 @@
     notes: [],
     trashEvents: [],
     priceLists: [],
-    materialAliases: [],
-    containers: []
+    priceLists: [],
+ownPurchasePrices: {
+  date: "",
+  excelName: "",
+  entries: []
+},
+materialAliases: [],
+containers: []
+    
   };
 
   let state = loadState();
@@ -419,6 +419,15 @@
   }
 
   function bindPriceList() {
+  document.querySelectorAll(".price-subtab").forEach((button) => {
+    button.addEventListener("click", () => activatePriceSubtab(button.dataset.priceTab));
+  });
+
+  $("#priceCurrentSearchInput")?.addEventListener("input", (event) => {
+    priceListSearchTerm = (event.target.value || "").trim();
+    renderCurrentPriceResults();
+  });
+
   $("#priceListCompanyInput")?.addEventListener("input", (event) => {
     ensurePriceListDraft();
     state.priceList.company = event.target.value || "";
@@ -431,16 +440,45 @@
     saveState();
   });
 
-  $("#priceListSearchInput")?.addEventListener("input", (event) => {
-    priceListSearchTerm = (event.target.value || "").trim();
-    renderPriceListSearch();
+  $("#priceListExcelInput")?.addEventListener("change", importPriceListExcel);
+  $("#priceListPdfInput")?.addEventListener("change", importPriceListPdfLocal);
+
+  $("#priceListSaveBtn")?.addEventListener("click", savePriceListDraft);
+  $("#priceListResetBtn")?.addEventListener("click", resetPriceListDraft);
+
+  $("#ownPriceDateInput")?.addEventListener("input", (event) => {
+    ensurePriceListDraft();
+    state.ownPurchasePrices.date = event.target.value || "";
+    saveState();
+    renderOwnPurchasePrices();
   });
 
-  $("#priceListExcelInput")?.addEventListener("change", importPriceListExcel);
-$("#priceListPdfInput")?.addEventListener("change", importPriceListPdfLocal);
-$("#priceListAddEntryBtn")?.addEventListener("click", addPriceListDraftEntry);
-$("#priceListSaveBtn")?.addEventListener("click", savePriceListDraft);
-$("#priceListResetBtn")?.addEventListener("click", resetPriceListDraft);
+  $("#ownPriceExcelInput")?.addEventListener("change", importOwnPurchasePriceExcel);
+}
+
+function activatePriceSubtab(tabName) {
+  const target = tabName || "current";
+
+  document.querySelectorAll(".price-subtab").forEach((button) => {
+    button.classList.toggle("active", button.dataset.priceTab === target);
+  });
+
+  document.querySelectorAll(".price-subpanel").forEach((panel) => {
+    panel.classList.remove("active");
+  });
+
+  const map = {
+    current: "#priceTabCurrent",
+    "supplier-import": "#priceTabSupplierImport",
+    "own-prices": "#priceTabOwnPrices",
+    archive: "#priceTabArchive",
+    history: "#priceTabHistory",
+    compare: "#priceTabCompare"
+  };
+
+  document.querySelector(map[target] || "#priceTabCurrent")?.classList.add("active");
+
+  renderPriceList();
 }
 
   function bindWasteCalendar() {
@@ -490,22 +528,31 @@ $("#priceListResetBtn")?.addEventListener("click", resetPriceListDraft);
   ensurePriceListDraft();
 
   const companyInput = $("#priceListCompanyInput");
-const dateInput = $("#priceListDateInput");
-const excelName = $("#priceListExcelName");
-const pdfName = $("#priceListPdfName");
-const searchInput = $("#priceListSearchInput");
+  const dateInput = $("#priceListDateInput");
+  const excelName = $("#priceListExcelName");
+  const pdfName = $("#priceListPdfName");
+  const currentSearchInput = $("#priceCurrentSearchInput");
 
-if (companyInput) companyInput.value = state.priceList.company || "";
-if (dateInput) dateInput.value = state.priceList.date || "";
-if (excelName) excelName.textContent = state.priceList.excelName || "Keine Excel hinterlegt";
-if (pdfName) pdfName.textContent = state.priceList.pdfName || "Keine PDF hinterlegt";
-  if (searchInput && searchInput.value !== priceListSearchTerm) {
-    searchInput.value = priceListSearchTerm;
+  if (companyInput) companyInput.value = state.priceList.company || "";
+  if (dateInput) dateInput.value = state.priceList.date || "";
+  if (excelName) excelName.textContent = state.priceList.excelName || "Keine Excel hinterlegt";
+  if (pdfName) pdfName.textContent = state.priceList.pdfName || "Keine PDF hinterlegt";
+  if (currentSearchInput && currentSearchInput.value !== priceListSearchTerm) {
+    currentSearchInput.value = priceListSearchTerm;
+  }
+
+  const ownDateInput = $("#ownPriceDateInput");
+  const ownExcelName = $("#ownPriceExcelName");
+
+  if (ownDateInput) ownDateInput.value = state.ownPurchasePrices.date || "";
+  if (ownExcelName) {
+    ownExcelName.textContent = state.ownPurchasePrices.excelName || "Keine eigene Preisliste geladen";
   }
 
   renderPriceListDraftEntries();
   renderPriceListsList();
-  renderPriceListSearch();
+  renderOwnPurchasePrices();
+  renderCurrentPriceResults();
 }
 
   function renderPriceListSearch() {
@@ -574,6 +621,17 @@ function ensurePriceListDraft() {
   if (!Array.isArray(state.materialAliases)) {
     state.materialAliases = [];
   }
+  if (!state.ownPurchasePrices || typeof state.ownPurchasePrices !== "object") {
+  state.ownPurchasePrices = {
+    date: "",
+    excelName: "",
+    entries: []
+  };
+}
+
+if (!Array.isArray(state.ownPurchasePrices.entries)) {
+  state.ownPurchasePrices.entries = [];
+}
 
   state.priceList.company = state.priceList.company || "";
 state.priceList.date = state.priceList.date || "";
@@ -1353,6 +1411,303 @@ function importPriceListExcel(event) {
   };
 
   reader.readAsArrayBuffer(file);
+}
+
+function importOwnPurchasePriceExcel(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  if (!window.XLSX) {
+    showToast("Excel-Bibliothek wurde nicht geladen.", "error");
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    try {
+      const data = new Uint8Array(reader.result);
+      const workbook = XLSX.read(data, { type: "array", cellDates: false });
+
+      const sheetName = workbook.SheetNames.find((name) => {
+        const normalized = String(name || "")
+          .toLowerCase()
+          .replace(/ß/g, "ss");
+        return normalized.includes("preisliste gross") || normalized.includes("preisliste groß");
+      });
+
+      if (!sheetName) {
+        showToast("Blatt „Preisliste groß“ wurde nicht gefunden.", "error");
+        return;
+      }
+
+      const worksheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: "",
+        blankrows: false
+      });
+
+      const entries = normalizeOwnPurchasePriceRows(rows);
+
+      if (!entries.length) {
+        showToast("Keine REGU-Ankaufspreise gefunden.", "error");
+        return;
+      }
+
+      ensurePriceListDraft();
+
+      state.ownPurchasePrices.excelName = file.name;
+      state.ownPurchasePrices.entries = entries;
+
+      if (!state.ownPurchasePrices.date) {
+        state.ownPurchasePrices.date = dateKey(new Date());
+      }
+
+      saveState();
+      renderPriceList();
+
+      showToast(`${entries.length} eigene Ankaufspreise importiert.`, "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Eigene Preisliste konnte nicht importiert werden.", "error");
+    } finally {
+      event.target.value = "";
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+function normalizeOwnPurchasePriceRows(rows) {
+  const result = [];
+  const seen = new Set();
+
+  rows.forEach((row) => {
+    const values = Array.isArray(row) ? row : Object.values(row || {});
+
+    for (let i = 0; i < values.length; i += 1) {
+      const articleNumber = cleanOwnPriceCell(values[i]);
+      const material = cleanOwnPriceCell(values[i + 1]);
+      const priceCell = values[i + 2];
+
+      if (!isLikelyOwnArticleNumber(articleNumber)) continue;
+      if (!isValidImportedPriceMaterial(material)) continue;
+
+      const isRequestPrice = /anfrage/i.test(String(priceCell || ""));
+      const priceKg = isRequestPrice ? 0 : parseOwnPurchasePriceNumber(priceCell);
+
+      if (!isRequestPrice && (!priceKg || priceKg <= 0)) continue;
+
+      const key = `${articleNumber}_${normalizeMaterialText(material)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      result.push({
+        id: uid(),
+        articleNumber,
+        material,
+        priceKg,
+        priceTo: priceKg * 1000,
+        unit: "€/kg",
+        onRequest: isRequestPrice,
+        note: isRequestPrice ? "auf Anfrage" : ""
+      });
+    }
+  });
+
+  return result;
+}
+
+function cleanOwnPriceCell(value) {
+  return String(value || "")
+    .replace(/\[image\]/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isLikelyOwnArticleNumber(value) {
+  const text = String(value || "").trim();
+  return /^\d{2,5}$/.test(text);
+}
+
+function parseOwnPurchasePriceNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  const text = String(value || "").trim();
+  if (!text) return 0;
+
+  if (/auf\s*anfrage/i.test(text)) return 0;
+
+  const match = text.match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?/);
+  if (!match) return 0;
+
+  return parseNumberGerman(match[0]);
+}
+
+function renderOwnPurchasePrices() {
+  const target = $("#ownPriceEntries");
+  const summary = $("#ownPriceSummary");
+  if (!target) return;
+
+  ensurePriceListDraft();
+
+  const entries = state.ownPurchasePrices.entries || [];
+
+  if (summary) {
+    summary.innerHTML = entries.length
+      ? `<strong>${entries.length}</strong> REGU-Ankaufspreise geladen · ${state.ownPurchasePrices.date ? formatDate(parseDateKey(state.ownPurchasePrices.date)) : "ohne Datum"}`
+      : "Noch keine eigene REGU-Preisliste geladen.";
+  }
+
+  if (!entries.length) {
+    target.innerHTML = `<div class="price-list-empty">Noch keine eigenen Ankaufspreise importiert.</div>`;
+    return;
+  }
+
+  target.innerHTML = entries
+    .map((entry) => `
+      <div class="own-price-row">
+        <span class="own-price-number">${escapeHtml(entry.articleNumber || "")}</span>
+        <strong>${escapeHtml(entry.material || "")}</strong>
+        <span>${entry.onRequest ? "auf Anfrage" : formatEuroPerKg(entry.priceKg)}</span>
+      </div>
+    `)
+    .join("");
+}
+
+function renderCurrentPriceResults() {
+  const target = $("#priceCurrentResults");
+  if (!target) return;
+
+  ensurePriceListDraft();
+
+  const query = priceListSearchTerm.trim();
+
+  if (!query) {
+    target.innerHTML = `
+      <div class="price-current-empty">
+        <strong>Material suchen</strong>
+        <span>Suche z. B. nach Zinn, Millberry, Kabel, Messing oder Blei.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const ownMatches = findOwnPurchaseMatches(query);
+  const supplierMatches = findSupplierPriceMatches(query);
+
+  if (!ownMatches.length && !supplierMatches.length) {
+    target.innerHTML = `<div class="price-list-empty">Keine Preise für „${escapeHtml(query)}“ gefunden.</div>`;
+    return;
+  }
+
+  const bestSupplier = supplierMatches
+    .filter((item) => Number(item.entry.priceKg || 0) > 0)
+    .sort((a, b) => Number(b.entry.priceKg || 0) - Number(a.entry.priceKg || 0))[0];
+
+  target.innerHTML = `
+    <div class="price-current-grid">
+      <article class="price-current-card own">
+        <span class="price-card-label">REGU Ankaufspreis</span>
+        ${
+          ownMatches.length
+            ? ownMatches.slice(0, 5).map((entry) => `
+              <div class="price-current-line">
+                <div>
+                  <strong>${escapeHtml(entry.material)}</strong>
+                  <small>${escapeHtml(entry.articleNumber || "")}</small>
+                </div>
+                <b>${entry.onRequest ? "auf Anfrage" : formatEuroPerKg(entry.priceKg)}</b>
+              </div>
+            `).join("")
+            : `<div class="price-current-muted">Kein eigener Ankaufspreis gefunden.</div>`
+        }
+      </article>
+
+      <article class="price-current-card supplier">
+        <span class="price-card-label">Lieferantenpreise</span>
+        ${
+          supplierMatches.length
+            ? supplierMatches.slice(0, 8).map(({ list, entry }) => `
+              <div class="price-current-line">
+                <div>
+                  <strong>${escapeHtml(entry.material)}</strong>
+                  <small>${escapeHtml(list.company || "")} · ${list.date ? formatDate(parseDateKey(list.date)) : "ohne Datum"}</small>
+                </div>
+                <b>${formatEuroPerKg(entry.priceKg)}</b>
+              </div>
+            `).join("")
+            : `<div class="price-current-muted">Kein Lieferantenpreis gefunden.</div>`
+        }
+      </article>
+
+      <article class="price-current-card margin">
+        <span class="price-card-label">Preisabstand</span>
+        ${buildMarginPreviewHtml(ownMatches[0], bestSupplier)}
+      </article>
+    </div>
+  `;
+}
+
+function findOwnPurchaseMatches(query) {
+  const normalizedQuery = normalizeMaterialText(query);
+
+  return (state.ownPurchasePrices?.entries || [])
+    .filter((entry) => normalizeMaterialText(entry.material).includes(normalizedQuery))
+    .sort((a, b) => String(a.material || "").localeCompare(String(b.material || ""), "de"));
+}
+
+function findSupplierPriceMatches(query) {
+  const normalizedQuery = normalizeMaterialText(query);
+  const matches = [];
+
+  (state.priceLists || []).forEach((list) => {
+    (list.entries || []).forEach((entry) => {
+      if (!normalizeMaterialText(entry.material).includes(normalizedQuery)) return;
+
+      matches.push({ list, entry });
+    });
+  });
+
+  return matches.sort((a, b) => Number(b.entry.priceKg || 0) - Number(a.entry.priceKg || 0));
+}
+
+function buildMarginPreviewHtml(ownEntry, supplierMatch) {
+  if (!ownEntry && !supplierMatch) {
+    return `<div class="price-current-muted">Noch keine Vergleichsdaten.</div>`;
+  }
+
+  if (!ownEntry) {
+    return `<div class="price-current-muted">Eigener Ankaufspreis fehlt.</div>`;
+  }
+
+  if (ownEntry.onRequest) {
+    return `
+      <div class="price-margin-big">auf Anfrage</div>
+      <small>Chefpreis manuell entscheiden.</small>
+    `;
+  }
+
+  if (!supplierMatch) {
+    return `<div class="price-current-muted">Lieferantenpreis fehlt.</div>`;
+  }
+
+  const own = Number(ownEntry.priceKg || 0);
+  const supplier = Number(supplierMatch.entry.priceKg || 0);
+  const margin = supplier - own;
+
+  return `
+    <div class="price-margin-big">${formatEuroPerKg(margin)}</div>
+    <small>
+      ${formatEuroPerKg(supplier)} Verkauf / Referenz<br>
+      ${formatEuroPerKg(own)} REGU Ankauf<br>
+      Bester Anbieter: ${escapeHtml(supplierMatch.list.company || "")}
+    </small>
+  `;
 }
 
 function normalizeImportedPriceRows(rows) {
