@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.8";
+  const APP_VERSION = "2.9";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1869,23 +1869,29 @@ function parseImportedPriceNumber(value) {
 
   if (/auf\s*anfrage/i.test(text)) return 0;
 
-  // Entfernt typische Preis-Endungen wie "3510,- €/t"
   const cleaned = text
     .replace(/€\s*\/?\s*t[o]?/gi, "")
     .replace(/eur\s*\/?\s*t[o]?/gi, "")
+    .replace(/€\s*\/?\s*kg/gi, "")
+    .replace(/eur\s*\/?\s*kg/gi, "")
     .replace(/,-/g, "")
+    .replace(/\s+/g, " ")
     .trim();
 
-  // Wichtig:
-  // Erst 4+ stellige Zahlen suchen, dann Tausenderpunkte, dann kurze Zahlen.
-  // Sonst wird aus "3510" fälschlich "351".
-  const match = cleaned.match(
-    /\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?|\d{4,}(?:,\d+)?|\d{1,3}(?:,\d+)?/
-  );
+  // Erst ganze 4+ stellige Zahlen, dann Zahlen mit Tausenderpunkt, dann kurze Zahlen.
+  const matches = cleaned.match(/\d{4,}(?:,\d+)?|\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?|\d{1,3}(?:,\d+)?/g);
 
-  if (!match) return 0;
+  if (!matches || !matches.length) return 0;
 
-  return parseNumberGerman(match[0]);
+  // Nimm die längste/kräftigste Zahl, nicht den ersten 3er-Fetzen.
+  const best = matches
+    .sort((a, b) => {
+      const cleanA = a.replace(/[.\s]/g, "");
+      const cleanB = b.replace(/[.\s]/g, "");
+      return cleanB.length - cleanA.length;
+    })[0];
+
+  return parseNumberGerman(best);
 }
 
 function cleanImportedPriceMaterial(value) {
