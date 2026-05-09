@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
@@ -43,7 +43,7 @@
           <div class="topbar-main">
             <div class="topbar-tools">
               <div class="topbar-utility">
-                <div class="version-badge">Version 2.6</div>
+                <div class="version-badge">Version 2.4</div>
                 <button id="backupExportBtn" class="ghost">Backup exportieren</button>
                 <label class="file-button ghost">
                   Backup importieren
@@ -164,111 +164,126 @@
       </section>
 
      <section id="preislisten" class="tab-panel">
-  <div class="price-list-layout-v2">
+  <div class="price-page">
 
-    <article class="panel price-search-panel">
-      <div class="panel-header wrap">
-        <div>
-          <h2>Material suchen</h2>
-          <p class="muted">Sucht über alle gespeicherten Preislisten.</p>
-        </div>
+    <article class="panel price-hero-panel">
+      <div class="price-hero-copy">
+        <h2>Preislisten</h2>
+        <p class="muted">Materialpreise aus Excel importieren, PDF nur zur Ansicht lokal speichern und alles schnell durchsuchen.</p>
       </div>
 
-      <label class="price-list-field">
-        <span>Suchbegriff</span>
-        <input id="priceListSearchInput" type="search" placeholder="z. B. Zinn, Kabel, Kupfer">
+      <label class="price-search-main">
+        <span>Material suchen</span>
+        <input id="priceListSearchInput" type="search" placeholder="z. B. Zinn, Kabel, Kupfer, Millberry">
       </label>
     </article>
 
-    <article class="panel price-create-panel">
+    <div class="price-workspace">
+
+      <article class="panel price-import-panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Neue Preisliste</h2>
+            <p class="muted">Excel importieren, Firma und Datum setzen, optional PDF hinterlegen.</p>
+          </div>
+        </div>
+
+        <div class="price-compact-grid">
+          <label class="price-list-field">
+            <span>Firma</span>
+            <input id="priceListCompanyInput" type="text" placeholder="z. B. Kaatsch, Kunz, ProMetall">
+          </label>
+
+          <label class="price-list-field">
+            <span>Gültig ab</span>
+            <input id="priceListDateInput" type="date">
+          </label>
+        </div>
+
+        <div class="price-upload-row">
+          <div class="price-list-field price-list-upload-card">
+            <span>Excel-Datei</span>
+            <label class="file-button ghost price-list-upload-button">
+              Excel auswählen
+              <input type="file" id="priceListExcelInput" accept=".xlsx,.xls" hidden>
+            </label>
+            <small id="priceListExcelName">Keine Excel hinterlegt</small>
+          </div>
+
+          <div class="price-list-field price-list-upload-card">
+            <span>PDF zur Ansicht</span>
+            <label class="file-button ghost price-list-upload-button">
+              PDF auswählen
+              <input type="file" id="priceListPdfInput" accept="application/pdf" hidden>
+            </label>
+            <small id="priceListPdfName">Keine PDF hinterlegt</small>
+          </div>
+        </div>
+
+        <div class="price-manual-box">
+          <h3>Einzelne Position ergänzen</h3>
+
+          <div class="price-entry-grid compact">
+            <label class="price-list-field">
+              <span>Material</span>
+              <input id="priceListMaterialInput" type="text" placeholder="z. B. Zinn">
+            </label>
+
+            <label class="price-list-field">
+              <span>Preis €/to</span>
+              <input id="priceListPriceToInput" type="number" step="0.01" placeholder="z. B. 10600">
+            </label>
+
+            <label class="price-list-field">
+              <span>Notiz</span>
+              <input id="priceListNoteInput" type="text" placeholder="optional">
+            </label>
+
+            <button id="priceListAddEntryBtn" type="button">Hinzufügen</button>
+          </div>
+        </div>
+
+        <div class="price-list-actions sticky-actions">
+          <button id="priceListSaveBtn" type="button">Preisliste speichern</button>
+          <button id="priceListResetBtn" class="ghost" type="button">Eingabe leeren</button>
+        </div>
+      </article>
+
+      <article class="panel price-preview-panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Import-Vorschau</h2>
+            <p class="muted">Erkannte Positionen prüfen und bei Bedarf direkt bearbeiten.</p>
+          </div>
+        </div>
+
+        <div id="priceListDraftEntries" class="price-list-draft modern"></div>
+      </article>
+
+    </div>
+
+    <article class="panel price-results-panel full-width-panel">
       <div class="panel-header wrap">
         <div>
-          <h2>Neue Preisliste</h2>
-          <p class="muted">Excel hochladen, Preise prüfen und optional PDF zur Ansicht hinterlegen.</p>
+          <h2>Suchergebnisse</h2>
+          <p class="muted">Treffer aus allen gespeicherten Preislisten.</p>
         </div>
       </div>
 
-      <div class="price-list-form-grid">
-        <label class="price-list-field">
-          <span>Firma</span>
-          <input id="priceListCompanyInput" type="text" placeholder="z. B. ProMetall GmbH">
-        </label>
-
-        <label class="price-list-field">
-          <span>Gültig ab / Datum</span>
-          <input id="priceListDateInput" type="date">
-        </label>
-
-        <div class="price-list-field price-list-upload-card">
-  <span>Excel hochladen</span>
-  <label class="file-button ghost price-list-upload-button">
-    Excel auswählen
-    <input type="file" id="priceListExcelInput" accept=".xlsx,.xls" hidden>
-  </label>
-  <small id="priceListExcelName">Keine Excel hinterlegt</small>
-</div>
-
-<div class="price-list-field price-list-upload-card">
-  <span>PDF zur Ansicht</span>
-  <label class="file-button ghost price-list-upload-button">
-    PDF auswählen
-    <input type="file" id="priceListPdfInput" accept="application/pdf" hidden>
-  </label>
-  <small id="priceListPdfName">Keine PDF hinterlegt</small>
-</div>
-      </div>
-
-      <hr class="soft-divider">
-
-      <h3>Materialposition hinzufügen</h3>
-
-      <div class="price-entry-grid">
-        <label class="price-list-field">
-          <span>Material</span>
-          <input id="priceListMaterialInput" type="text" placeholder="z. B. Zinn, Cu Draht MILBERRY">
-        </label>
-
-        <label class="price-list-field">
-          <span>Preis €/to</span>
-          <input id="priceListPriceToInput" type="number" step="0.01" placeholder="z. B. 10600">
-        </label>
-
-        <label class="price-list-field">
-          <span>Notiz</span>
-          <input id="priceListNoteInput" type="text" placeholder="optional">
-        </label>
-
-        <button id="priceListAddEntryBtn" type="button">Position hinzufügen</button>
-      </div>
-
-      <div id="priceListDraftEntries" class="price-list-draft"></div>
-
-      <div class="price-list-actions">
-        <button id="priceListSaveBtn" type="button">Preisliste speichern</button>
-        <button id="priceListResetBtn" class="ghost" type="button">Eingabe leeren</button>
+      <div id="priceListSearchResult" class="price-list-search-result">
+        Noch kein Material gesucht.
       </div>
     </article>
 
-    <article class="panel full-width-panel price-results-panel">
+    <article class="panel price-results-panel full-width-panel">
       <div class="panel-header wrap">
         <div>
-          <h2>Ergebnisse & Preislisten</h2>
+          <h2>Gespeicherte Preislisten</h2>
+          <p class="muted">Archivierte Preislisten mit Excel-Daten und optionalem PDF.</p>
         </div>
       </div>
 
-      <div class="price-results-block">
-        <h3>Suchergebnisse</h3>
-        <div id="priceListSearchResult" class="price-list-search-result">
-          Noch kein Material gesucht.
-        </div>
-      </div>
-
-      <hr class="soft-divider">
-
-      <div class="price-results-block">
-        <h3>Gespeicherte Preislisten</h3>
-        <div id="priceListsList" class="price-lists-list"></div>
-      </div>
+      <div id="priceListsList" class="price-lists-list"></div>
     </article>
 
   </div>
