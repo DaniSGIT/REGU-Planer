@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.12";
+  const APP_VERSION = "2.13";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -124,6 +124,8 @@ containers: []
   let containerVisibleRows = [];
   let employeeAdminSearchTerm = "";
   let priceListSearchTerm = "";
+  let selectedOwnPriceRef = null;
+  let selectedSupplierPriceRef = null;
   let employeeAdminPointerDrag = null;
   let toastCounter = 0;
 
@@ -1433,6 +1435,14 @@ function formatEuroPerKg(value) {
   return `${number.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €/kg`;
 }
 
+function formatEuro(value) {
+  const number = Number(value || 0);
+  return `${number.toLocaleString("de-DE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })} €`;
+}
+
 function openLocalFilesDb() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(LOCAL_FILES_DB, LOCAL_FILES_DB_VERSION);
@@ -1726,6 +1736,9 @@ function renderCurrentPriceResults() {
   const query = priceListSearchTerm.trim();
 
   if (!query) {
+    selectedOwnPriceRef = null;
+    selectedSupplierPriceRef = null;
+
     target.innerHTML = `
       <div class="price-current-empty">
         <strong>Material suchen</strong>
@@ -1739,56 +1752,112 @@ function renderCurrentPriceResults() {
   const supplierMatches = findSupplierPriceMatches(query);
 
   if (!ownMatches.length && !supplierMatches.length) {
+    selectedOwnPriceRef = null;
+    selectedSupplierPriceRef = null;
+
     target.innerHTML = `<div class="price-list-empty">Keine Preise für „${escapeHtml(query)}“ gefunden.</div>`;
     return;
   }
 
+  const selectedOwn = findSelectedOwnPrice(ownMatches) || ownMatches[0] || null;
+
   const bestSupplier = supplierMatches
     .filter((item) => Number(item.entry.priceKg || 0) > 0)
-    .sort((a, b) => Number(b.entry.priceKg || 0) - Number(a.entry.priceKg || 0))[0];
+    .sort((a, b) => Number(b.entry.priceKg || 0) - Number(a.entry.priceKg || 0))[0] || null;
+
+  const selectedSupplier = findSelectedSupplierPrice(supplierMatches) || bestSupplier;
+
+  if (selectedOwn && !selectedOwnPriceRef) {
+    selectedOwnPriceRef = selectedOwn.id;
+  }
+
+  if (selectedSupplier && !selectedSupplierPriceRef) {
+    selectedSupplierPriceRef = {
+      listId: selectedSupplier.list.id,
+      entryId: selectedSupplier.entry.id
+    };
+  }
 
   target.innerHTML = `
     <div class="price-current-grid">
       <article class="price-current-card own">
-        <span class="price-card-label">REGU Ankaufspreis</span>
+        <span class="price-card-label">REGU Ankaufspreis auswählen</span>
         ${
           ownMatches.length
-            ? ownMatches.slice(0, 5).map((entry) => `
-              <div class="price-current-line">
+            ? ownMatches.slice(0, 12).map((entry) => `
+              <button
+                type="button"
+                class="price-current-line clickable-price ${selectedOwn?.id === entry.id ? "active" : ""}"
+                data-own-price-id="${escapeHtmlAttr(entry.id)}">
                 <div>
                   <strong>${escapeHtml(entry.material)}</strong>
-                  <small>${escapeHtml(entry.articleNumber || "")}</small>
+                  <small>${escapeHtml(entry.articleNumber || "")}${entry.materialGroup ? " · " + escapeHtml(entry.materialGroup) : ""}</small>
                 </div>
                 <b>${entry.onRequest ? "auf Anfrage" : formatEuroPerKg(entry.priceKg)}</b>
-              </div>
+              </button>
             `).join("")
             : `<div class="price-current-muted">Kein eigener Ankaufspreis gefunden.</div>`
         }
       </article>
 
       <article class="price-current-card supplier">
-        <span class="price-card-label">Lieferantenpreise</span>
+        <span class="price-card-label">Lieferantenpreis auswählen</span>
         ${
           supplierMatches.length
-            ? supplierMatches.slice(0, 8).map(({ list, entry }) => `
-              <div class="price-current-line">
+            ? supplierMatches.slice(0, 16).map(({ list, entry }) => `
+              <button
+                type="button"
+                class="price-current-line clickable-price ${selectedSupplier?.list.id === list.id && selectedSupplier?.entry.id === entry.id ? "active" : ""}"
+                data-supplier-list-id="${escapeHtmlAttr(list.id)}"
+                data-supplier-entry-id="${escapeHtmlAttr(entry.id)}">
                 <div>
                   <strong>${escapeHtml(entry.material)}</strong>
-                  <small>${escapeHtml(list.company || "")} · ${list.date ? formatDate(parseDateKey(list.date)) : "ohne Datum"}</small>
+                  <small>${escapeHtml(list.company || "")} · ${list.date ? formatDate(parseDateKey(list.date)) : "ohne Datum"}${entry.materialGroup ? " · " + escapeHtml(entry.materialGroup) : ""}</small>
                 </div>
                 <b>${formatEuroPerKg(entry.priceKg)}</b>
-              </div>
+              </button>
             `).join("")
             : `<div class="price-current-muted">Kein Lieferantenpreis gefunden.</div>`
         }
       </article>
 
       <article class="price-current-card margin">
-        <span class="price-card-label">Preisabstand</span>
-        ${buildMarginPreviewHtml(ownMatches[0], bestSupplier)}
+        <span class="price-card-label">Vergleich / Preisabstand</span>
+        ${buildMarginPreviewHtml(selectedOwn, selectedSupplier)}
       </article>
     </div>
   `;
+
+  target.querySelectorAll("[data-own-price-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedOwnPriceRef = button.dataset.ownPriceId || null;
+      renderCurrentPriceResults();
+    });
+  });
+
+  target.querySelectorAll("[data-supplier-list-id][data-supplier-entry-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedSupplierPriceRef = {
+        listId: button.dataset.supplierListId || "",
+        entryId: button.dataset.supplierEntryId || ""
+      };
+      renderCurrentPriceResults();
+    });
+  });
+}
+
+function findSelectedOwnPrice(matches) {
+  if (!selectedOwnPriceRef) return null;
+  return matches.find((entry) => entry.id === selectedOwnPriceRef) || null;
+}
+
+function findSelectedSupplierPrice(matches) {
+  if (!selectedSupplierPriceRef) return null;
+
+  return matches.find(({ list, entry }) =>
+    list.id === selectedSupplierPriceRef.listId &&
+    entry.id === selectedSupplierPriceRef.entryId
+  ) || null;
 }
 
 function findOwnPurchaseMatches(query) {
@@ -1820,18 +1889,29 @@ function buildMarginPreviewHtml(ownEntry, supplierMatch) {
   }
 
   if (!ownEntry) {
-    return `<div class="price-current-muted">Eigener Ankaufspreis fehlt.</div>`;
+    return `<div class="price-current-muted">Bitte einen REGU-Ankaufspreis auswählen.</div>`;
   }
 
   if (ownEntry.onRequest) {
     return `
-      <div class="price-margin-big">auf Anfrage</div>
-      <small>Chefpreis manuell entscheiden.</small>
+      <div class="price-selected-box">
+        <small>REGU-Auswahl</small>
+        <strong>${escapeHtml(ownEntry.material)}</strong>
+        <b>auf Anfrage</b>
+      </div>
+      <div class="price-current-muted">Chefpreis manuell entscheiden.</div>
     `;
   }
 
   if (!supplierMatch) {
-    return `<div class="price-current-muted">Lieferantenpreis fehlt.</div>`;
+    return `
+      <div class="price-selected-box">
+        <small>REGU-Auswahl</small>
+        <strong>${escapeHtml(ownEntry.material)}</strong>
+        <b>${formatEuroPerKg(ownEntry.priceKg)}</b>
+      </div>
+      <div class="price-current-muted">Bitte einen Lieferantenpreis auswählen.</div>
+    `;
   }
 
   const own = Number(ownEntry.priceKg || 0);
@@ -1839,11 +1919,28 @@ function buildMarginPreviewHtml(ownEntry, supplierMatch) {
   const margin = supplier - own;
 
   return `
-    <div class="price-margin-big">${formatEuroPerKg(margin)}</div>
+    <div class="price-selected-stack">
+      <div class="price-selected-box">
+        <small>REGU Ankauf</small>
+        <strong>${escapeHtml(ownEntry.material)}</strong>
+        <b>${formatEuroPerKg(own)}</b>
+      </div>
+
+      <div class="price-selected-box">
+        <small>Lieferant / Verkauf</small>
+        <strong>${escapeHtml(supplierMatch.entry.material)}</strong>
+        <b>${formatEuroPerKg(supplier)}</b>
+        <em>${escapeHtml(supplierMatch.list.company || "")}</em>
+      </div>
+    </div>
+
+    <div class="price-margin-big ${margin < 0 ? "negative" : ""}">
+      ${formatEuroPerKg(margin)}
+    </div>
+
     <small>
-      ${formatEuroPerKg(supplier)} Verkauf / Referenz<br>
-      ${formatEuroPerKg(own)} REGU Ankauf<br>
-      Bester Anbieter: ${escapeHtml(supplierMatch.list.company || "")}
+      Theoretischer Preisabstand pro kg.<br>
+      Bei 100 kg: <strong>${formatEuro(margin * 100)}</strong>
     </small>
   `;
 }
