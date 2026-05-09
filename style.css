@@ -1,4 +1,4 @@
-﻿:root{
+:root{
   --border:#d8e3ee;
   --text:#1b2a38;
   --heading:#3b3b3b;
@@ -4665,5 +4665,371 @@ main > *{
 
   #container .container-action-row {
     flex-direction: column;
+  }
+}
+
+/* Preislisten Layout 2.4 */
+
+.price-page{
+  display:grid;
+  gap:16px;
+}
+
+.price-hero-panel{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(320px,520px);
+  gap:18px;
+  align-items:end;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(227,16,16,.10), transparent 32%),
+    linear-gradient(180deg,#ffffff 0%,#f7fafc 100%);
+}
+
+.price-hero-copy h2{
+  margin:0 0 6px;
+  font-size:2rem;
+}
+
+.price-search-main{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.price-search-main span,
+.price-list-field span{
+  font-size:.78rem;
+  font-weight:900;
+  color:#344657;
+}
+
+.price-search-main input{
+  width:100%;
+  min-height:48px;
+  font-size:1.05rem;
+  font-weight:800;
+  border-radius:18px;
+  background:#fff;
+}
+
+.price-workspace{
+  display:grid;
+  grid-template-columns:minmax(360px,460px) minmax(0,1fr);
+  gap:16px;
+  align-items:start;
+}
+
+.price-import-panel,
+.price-preview-panel{
+  min-height:520px;
+}
+
+.price-compact-grid{
+  display:grid;
+  grid-template-columns:1fr 170px;
+  gap:12px;
+}
+
+.price-list-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.price-list-field input{
+  width:100%;
+}
+
+.price-upload-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:14px;
+}
+
+.price-list-upload-card{
+  border:1px dashed #cbd7e5;
+  background:#f8fbff;
+  border-radius:18px;
+  padding:12px;
+}
+
+.price-list-upload-card small{
+  color:var(--muted);
+  font-size:.78rem;
+  overflow-wrap:anywhere;
+}
+
+.price-list-upload-button{
+  width:100%;
+}
+
+.price-manual-box{
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid #e0e8f1;
+}
+
+.price-manual-box h3{
+  margin:0 0 10px;
+}
+
+.price-entry-grid.compact{
+  display:grid;
+  grid-template-columns:1fr 130px;
+  gap:10px;
+}
+
+.price-entry-grid.compact label:nth-child(3){
+  grid-column:1 / -1;
+}
+
+.price-entry-grid.compact button{
+  grid-column:1 / -1;
+}
+
+.sticky-actions{
+  position:sticky;
+  bottom:14px;
+  margin-top:18px;
+  padding:12px;
+  background:rgba(255,255,255,.86);
+  backdrop-filter:blur(10px);
+  border:1px solid #e0e8f1;
+  border-radius:20px;
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+}
+
+.price-list-draft.modern{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:620px;
+  overflow:auto;
+  padding-right:4px;
+}
+
+.price-list-empty{
+  border:1px dashed #cbd7e5;
+  border-radius:18px;
+  padding:18px;
+  background:#f8fbff;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.price-entry-row.editable-price-entry{
+  display:grid;
+  grid-template-columns:minmax(220px,1.5fr) 130px minmax(180px,1fr) 120px 100px;
+  gap:8px;
+  align-items:end;
+  border:1px solid #dce7f2;
+  border-radius:16px;
+  padding:10px;
+  background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);
+}
+
+.price-entry-row.editable-price-entry label{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.price-entry-row.editable-price-entry label span{
+  font-size:.72rem;
+  font-weight:900;
+  color:#52677a;
+}
+
+.price-entry-row.editable-price-entry input{
+  width:100%;
+  min-height:36px;
+  border-radius:11px;
+  font-size:.86rem;
+  padding:7px 9px;
+}
+
+.editable-price-entry-meta{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  justify-content:center;
+  min-height:36px;
+}
+
+.editable-price-entry-meta strong{
+  color:#1d5f99;
+}
+
+.editable-price-entry-meta small{
+  color:var(--muted);
+  font-size:.72rem;
+}
+
+.price-list-search-result{
+  border:1px solid #dce7f2;
+  border-radius:20px;
+  background:#f8fbff;
+  padding:12px;
+  min-height:74px;
+}
+
+.price-list-search-result.empty{
+  color:var(--muted);
+  font-weight:700;
+}
+
+.price-search-hit{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:12px;
+  align-items:center;
+  padding:12px;
+  border-radius:16px;
+  background:#fff;
+  border:1px solid #e0e8f1;
+}
+
+.price-search-hit + .price-search-hit{
+  margin-top:8px;
+}
+
+.price-search-hit small,
+.price-search-values small{
+  display:block;
+  color:var(--muted);
+  margin-top:3px;
+}
+
+.price-search-values{
+  text-align:right;
+  white-space:nowrap;
+}
+
+.price-lists-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+  gap:12px;
+}
+
+.price-list-card{
+  border:1px solid #dce7f2;
+  border-radius:20px;
+  background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);
+  padding:14px;
+  box-shadow:0 10px 22px rgba(18,42,66,.06);
+}
+
+.price-list-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:12px;
+}
+
+.price-list-card-head strong{
+  display:block;
+  font-size:1rem;
+}
+
+.price-list-card-head small{
+  display:block;
+  color:var(--muted);
+  margin-top:4px;
+  line-height:1.35;
+}
+
+.price-list-card-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.price-list-card-actions button{
+  padding:8px 10px;
+  border-radius:12px;
+  font-size:.82rem;
+}
+
+.price-list-card-actions button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+  transform:none;
+  box-shadow:none;
+}
+
+.price-list-entry-table{
+  display:grid;
+  gap:6px;
+  max-height:260px;
+  overflow:auto;
+  padding-right:4px;
+}
+
+.price-list-entry-line{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;
+  gap:10px;
+  align-items:center;
+  padding:8px 10px;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid #e6edf5;
+  font-size:.86rem;
+}
+
+.price-list-entry-line span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.price-list-entry-line strong{
+  white-space:nowrap;
+}
+
+@media (max-width:1200px){
+  .price-hero-panel,
+  .price-workspace{
+    grid-template-columns:1fr;
+  }
+
+  .price-import-panel,
+  .price-preview-panel{
+    min-height:auto;
+  }
+
+  .price-entry-row.editable-price-entry{
+    grid-template-columns:1fr 130px;
+  }
+
+  .price-entry-row.editable-price-entry label:nth-child(3),
+  .editable-price-entry-meta,
+  .price-entry-row.editable-price-entry button{
+    grid-column:1 / -1;
+  }
+}
+
+@media (max-width:700px){
+  .price-compact-grid,
+  .price-upload-row,
+  .price-entry-grid.compact{
+    grid-template-columns:1fr;
+  }
+
+  .price-list-card-head{
+    flex-direction:column;
+  }
+
+  .price-list-card-actions{
+    justify-content:flex-start;
+  }
+
+  .price-list-entry-line{
+    grid-template-columns:1fr;
   }
 }
