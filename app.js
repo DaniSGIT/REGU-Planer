@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.7";
+  const APP_VERSION = "2.6";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1711,6 +1711,101 @@ function buildMarginPreviewHtml(ownEntry, supplierMatch) {
 }
 
 function normalizeImportedPriceRows(rows) {
+  const cleanTableEntries = normalizeCleanPriceTableRows(rows);
+
+  if (cleanTableEntries.length) {
+    return cleanTableEntries;
+  }
+
+  return normalizeMessyPriceRows(rows);
+}
+
+function normalizeCleanPriceTableRows(rows) {
+  const result = [];
+  const seen = new Set();
+
+  const tableRows = rows.map((row) =>
+    Array.isArray(row) ? row : Object.values(row || {})
+  );
+
+  const headerIndex = tableRows.findIndex((row) => {
+    const normalizedCells = row.map((cell) => normalizePriceColumnName(cell));
+
+    const hasMaterial = normalizedCells.some((cell) =>
+      ["material", "bezeichnung", "artikel", "sorte", "name"].includes(cell)
+    );
+
+    const hasPrice = normalizedCells.some((cell) =>
+      [
+        "preis",
+        "preiseurto",
+        "eurto",
+        "eto",
+        "euroto",
+        "preisprotonne",
+        "tonnenpreis",
+        "ankauf",
+        "ankaufspreis"
+      ].includes(cell)
+    );
+
+    return hasMaterial && hasPrice;
+  });
+
+  if (headerIndex === -1) return [];
+
+  const header = tableRows[headerIndex].map((cell) => normalizePriceColumnName(cell));
+
+  const materialIndex = header.findIndex((cell) =>
+    ["material", "bezeichnung", "artikel", "sorte", "name"].includes(cell)
+  );
+
+  const priceIndex = header.findIndex((cell) =>
+    [
+      "preis",
+      "preiseurto",
+      "eurto",
+      "eto",
+      "euroto",
+      "preisprotonne",
+      "tonnenpreis",
+      "ankauf",
+      "ankaufspreis"
+    ].includes(cell)
+  );
+
+  const noteIndex = header.findIndex((cell) =>
+    ["notiz", "bemerkung", "hinweis"].includes(cell)
+  );
+
+  if (materialIndex === -1 || priceIndex === -1) return [];
+
+  tableRows.slice(headerIndex + 1).forEach((row) => {
+    const material = cleanImportedPriceMaterial(row[materialIndex]);
+    const priceTo = parseImportedPriceNumber(row[priceIndex]);
+    const note = noteIndex >= 0 ? cleanImportedPriceMaterial(row[noteIndex]) : "";
+
+    if (!isValidImportedPriceMaterial(material)) return;
+    if (!priceTo || priceTo <= 0) return;
+
+    const key = `${normalizeMaterialText(material)}_${priceTo}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    result.push({
+      id: uid(),
+      material,
+      priceTo,
+      priceKg: priceTo / 1000,
+      unit: "€/to",
+      note
+    });
+  });
+
+  return result;
+}
+
+function normalizeMessyPriceRows(rows) {
   const result = [];
   const seen = new Set();
 
@@ -1745,6 +1840,7 @@ function normalizeImportedPriceRows(rows) {
 
   return result;
 }
+
 
 function findPriceToRight(values, startIndex) {
   // Kaatsch braucht eine größere Suchweite, weil rechts Material und Preis weit auseinander liegen.
