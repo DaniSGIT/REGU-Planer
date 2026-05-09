@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.9";
+  const APP_VERSION = "2.6";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1869,36 +1869,48 @@ function parseImportedPriceNumber(value) {
 
   if (/auf\s*anfrage/i.test(text)) return 0;
 
-  const cleaned = text
+  // Datum / Wechselkurs / Kopfzeilen nicht als Preis lesen
+  if (/\d{1,2}\.\d{1,2}\.\d{2,4}/.test(text)) return 0;
+  if (/€\s*\/\s*\$/.test(text)) return 0;
+
+  // Alles hinter Euro/Einheit ist egal.
+  // Beispiele:
+  // "3510,- €/to" -> "3510,-"
+  // "10.460,- €/t" -> "10.460,-"
+  let cleaned = text
     .replace(/€\s*\/?\s*t[o]?/gi, "")
     .replace(/eur\s*\/?\s*t[o]?/gi, "")
     .replace(/€\s*\/?\s*kg/gi, "")
     .replace(/eur\s*\/?\s*kg/gi, "")
     .replace(/,-/g, "")
+    .replace(/[^\d.,\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  // Erst ganze 4+ stellige Zahlen, dann Zahlen mit Tausenderpunkt, dann kurze Zahlen.
-  const matches = cleaned.match(/\d{4,}(?:,\d+)?|\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?|\d{1,3}(?:,\d+)?/g);
+  if (!cleaned) return 0;
 
-  if (!matches || !matches.length) return 0;
+  // Sucht ganze Zahlen, nicht nur die ersten 3 Stellen.
+  const candidates = cleaned.match(/\d[\d.\s]*(?:,\d+)?/g);
 
-  // Nimm die längste/kräftigste Zahl, nicht den ersten 3er-Fetzen.
-  const best = matches
-    .sort((a, b) => {
-      const cleanA = a.replace(/[.\s]/g, "");
-      const cleanB = b.replace(/[.\s]/g, "");
-      return cleanB.length - cleanA.length;
-    })[0];
+  if (!candidates || !candidates.length) return 0;
 
-  return parseNumberGerman(best);
-}
+  const numbers = candidates
+    .map((candidate) => {
+      const normalized = String(candidate || "")
+        .trim()
+        .replace(/\s/g, "")
+        .replace(/\./g, "")
+        .replace(",", ".");
 
-function cleanImportedPriceMaterial(value) {
-  return String(value || "")
-    .replace(/\[image\]/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+      const number = Number(normalized);
+      return Number.isFinite(number) ? number : 0;
+    })
+    .filter((number) => number > 0);
+
+  if (!numbers.length) return 0;
+
+  // Falls mehrere Zahlen in einer Zelle stehen: größte plausible Zahl nehmen.
+  return Math.max(...numbers);
 }
 
 function isValidImportedPriceMaterial(material) {
@@ -2003,26 +2015,7 @@ if (/^(d-)?\d{4,5}$/i.test(text)) return false;
   return true;
 }
 
-function parseImportedPriceNumber(value) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
 
-  const text = String(value || "").trim();
-  if (!text) return 0;
-
-  if (/auf\s*anfrage/i.test(text)) return 0;
-
-  // Beispiele:
-  // 2750,- €/t
-  // 10.400
-  // 10400
-  // 10.400,50
-  const match = text.match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?/);
-  if (!match) return 0;
-
-  return parseNumberGerman(match[0]);
-}
 
 function cleanImportedPriceMaterial(value) {
   return String(value || "")
