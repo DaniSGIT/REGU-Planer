@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.10";
+  const APP_VERSION = "2.11";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1037,6 +1037,143 @@ function normalizeMaterialText(value) {
     .trim();
 }
 
+function getMaterialGroupName(material) {
+  const text = normalizeMaterialText(material);
+
+  if (!text) return "Sonstiges";
+
+  const groups = [
+    {
+  name: "Kabel",
+  words: [
+    "kabel",
+    "cu pvc",
+    "cupvc",
+    "pvc kabel",
+    "berry kabel",
+    "kabelschrott",
+    "kupferkabel",
+    "cu kabel"
+  ]
+},
+{
+  name: "Kupfer",
+  words: [
+    "kupfer",
+    "cu",
+    "millberry",
+    "milberry",
+    "schwerkupfer",
+    "kupferschrott",
+    "cu draht",
+    "lackdraht",
+    "kupferrohr",
+    "cu rohr",
+    "berry"
+  ]
+},
+    {
+      name: "Aluminium",
+      words: [
+        "aluminium",
+        "alu",
+        "aluschrott",
+        "alu schrott",
+        "alu profile",
+        "aluprofile",
+        "alu guss",
+        "aluguss",
+        "alp",
+        "almg",
+        "al mg"
+      ]
+    },
+    {
+      name: "Messing",
+      words: [
+        "messing",
+        "ms",
+        "ms58",
+        "ms 58",
+        "ms-58",
+        "messingschrott",
+        "messing schwer",
+        "messing spaene",
+        "messing späne",
+        "gelbguss",
+        "gelbguß"
+      ]
+    },
+    {
+      name: "Rotguss",
+      words: [
+        "rotguss",
+        "rotguß",
+        "rg",
+        "bronze"
+      ]
+    },
+    {
+      name: "Zinn",
+      words: [
+        "zinn",
+        "loetzinn",
+        "lötzinn",
+        "geschirrzinn",
+        "sn"
+      ]
+    },
+    {
+      name: "Blei",
+      words: [
+        "blei",
+        "altblei",
+        "pb",
+        "bleischrott"
+      ]
+    },
+    {
+      name: "Zink",
+      words: [
+        "zink",
+        "zn",
+        "zinkschrott"
+      ]
+    },
+    {
+      name: "Edelstahl",
+      words: [
+        "edelstahl",
+        "v2a",
+        "v4a",
+        "niro",
+        "inox",
+        "chrom nickel",
+        "chromnickel"
+      ]
+    },
+    {
+      name: "Kabel",
+      words: [
+        "kabel",
+        "cu pvc",
+        "pvc kabel",
+        "berry kabel",
+        "kabelschrott",
+        "kupferkabel"
+      ]
+    }
+  ];
+
+  for (const group of groups) {
+    if (group.words.some((word) => text.includes(normalizeMaterialText(word)))) {
+      return group.name;
+    }
+  }
+
+  return String(material || "").trim() || "Sonstiges";
+}
+
 function normalizeDetectedMaterialName(rawMaterial) {
   const cleaned = String(rawMaterial || "").trim();
   if (!cleaned) return "";
@@ -1505,15 +1642,16 @@ function normalizeOwnPurchasePriceRows(rows) {
       seen.add(key);
 
       result.push({
-        id: uid(),
-        articleNumber,
-        material,
-        priceKg,
-        priceTo: priceKg * 1000,
-        unit: "€/kg",
-        onRequest: isRequestPrice,
-        note: isRequestPrice ? "auf Anfrage" : ""
-      });
+  id: uid(),
+  articleNumber,
+  material,
+  materialGroup: getMaterialGroupName(material),
+  priceKg,
+  priceTo: priceKg * 1000,
+  unit: "€/kg",
+  onRequest: isRequestPrice,
+  note: isRequestPrice ? "auf Anfrage" : ""
+});
     }
   });
 
@@ -1793,13 +1931,14 @@ function normalizeCleanPriceTableRows(rows) {
     seen.add(key);
 
     result.push({
-      id: uid(),
-      material,
-      priceTo,
-      priceKg: priceTo / 1000,
-      unit: "€/to",
-      note
-    });
+  id: uid(),
+  material,
+  materialGroup: getMaterialGroupName(material),
+  priceTo,
+  priceKg: priceTo / 1000,
+  unit: "€/to",
+  note
+});
   });
 
   return result;
@@ -1828,13 +1967,14 @@ function normalizeMessyPriceRows(rows) {
       seen.add(key);
 
       result.push({
-        id: uid(),
-        material,
-        priceTo: foundPrice,
-        priceKg: foundPrice / 1000,
-        unit: "€/to",
-        note: ""
-      });
+  id: uid(),
+  material,
+  materialGroup: getMaterialGroupName(material),
+  priceTo,
+  priceKg: priceTo / 1000,
+  unit: "€/to",
+  note
+});
     });
   });
 
