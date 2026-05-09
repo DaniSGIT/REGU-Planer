@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.11";
+  const APP_VERSION = "2.12";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1848,14 +1848,60 @@ function buildMarginPreviewHtml(ownEntry, supplierMatch) {
   `;
 }
 
-function normalizeImportedPriceRows(rows) {
+function normalizeImportedPriceRows(rows, fileName = "") {
   const cleanTableEntries = normalizeCleanPriceTableRows(rows);
 
   if (cleanTableEntries.length) {
     return cleanTableEntries;
   }
 
+  const simpleTwoColumnEntries = normalizeSimpleTwoColumnPriceRows(rows);
+
+  if (simpleTwoColumnEntries.length) {
+    return simpleTwoColumnEntries;
+  }
+
+  const kaatschEntries = normalizeKaatschPriceRows(rows, fileName);
+
+  if (kaatschEntries.length) {
+    return kaatschEntries;
+  }
+
   return normalizeMessyPriceRows(rows);
+}
+
+function normalizeSimpleTwoColumnPriceRows(rows) {
+  const result = [];
+  const seen = new Set();
+
+  const tableRows = rows.map((row) =>
+    Array.isArray(row) ? row : Object.values(row || {})
+  );
+
+  tableRows.forEach((row) => {
+    const material = cleanImportedPriceMaterial(row[0]);
+    const priceTo = parseImportedPriceNumber(row[1]);
+    const note = cleanImportedPriceMaterial(row[2] || "");
+
+    if (!isValidImportedPriceMaterial(material)) return;
+    if (!priceTo || priceTo <= 0) return;
+
+    const key = `${normalizeMaterialText(material)}_${priceTo}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+
+    result.push({
+      id: uid(),
+      material,
+      materialGroup: getMaterialGroupName(material),
+      priceTo,
+      priceKg: priceTo / 1000,
+      unit: "€/to",
+      note
+    });
+  });
+
+  return result;
 }
 
 function normalizeCleanPriceTableRows(rows) {
