@@ -1,7 +1,7 @@
-﻿(function () {
+(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "2.5";
+  const APP_VERSION = "2.6";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -1418,13 +1418,20 @@ function parseImportedPriceNumber(value) {
 
   if (/auf\s*anfrage/i.test(text)) return 0;
 
-  // Beispiele:
-  // 2750,- €/t
-  // 10.400
-  // 10400
-  // 10.400,50
-  // 1 250,- €/t
-  const match = text.match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d+)?|\d+(?:,\d+)?/);
+  // Entfernt typische Preis-Endungen wie "3510,- €/t"
+  const cleaned = text
+    .replace(/€\s*\/?\s*t[o]?/gi, "")
+    .replace(/eur\s*\/?\s*t[o]?/gi, "")
+    .replace(/,-/g, "")
+    .trim();
+
+  // Wichtig:
+  // Erst 4+ stellige Zahlen suchen, dann Tausenderpunkte, dann kurze Zahlen.
+  // Sonst wird aus "3510" fälschlich "351".
+  const match = cleaned.match(
+    /\d{1,3}(?:[.\s]\d{3})+(?:,\d+)?|\d{4,}(?:,\d+)?|\d{1,3}(?:,\d+)?/
+  );
+
   if (!match) return 0;
 
   return parseNumberGerman(match[0]);
@@ -1485,27 +1492,53 @@ function isValidImportedPriceMaterial(material) {
   if (blockedExact.includes(normalized)) return false;
 
   const blockedParts = [
-    "llme in eur",
-    "preisinformation",
-    "rohstoffhandel",
-    "gmbh",
-    "telefon",
-    "telefax",
-    "email",
-    "www.",
-    "ust-id",
-    "iban",
-    "bic",
-    "geschäftsführer",
-    "preise verstehen sich",
-    "freibleibend",
-    "sortierkosten",
-    "allgemeinen geschäftsbedingungen",
-    "fabian wimmer",
-    "stefanie miesl"
-  ];
+  "llme in eur",
+  "preisinformation",
+  "rohstoffhandel",
+  "schrott-und metallhandel",
+  "schrott- und metallhandel",
+  "kaatsch",
+  "gmbh",
+  "telefon",
+  "tel.",
+  "tel:",
+  "telefax",
+  "fax",
+  "email",
+  "e-mail",
+  "www.",
+  "http",
+  "ust-id",
+  "iban",
+  "bic",
+  "geschäftsführer",
+  "geschaeftsfuehrer",
+  "preise verstehen sich",
+  "freibleibend",
+  "sortierkosten",
+  "allgemeinen geschäftsbedingungen",
+  "fabian wimmer",
+  "stefanie miesl",
+
+  // Adressen / Briefkopf
+  "straße",
+  "strasse",
+  "str.",
+  "max-planck",
+  "postfach",
+  "tuttlingen",
+  "karlsruhe",
+  "d-",
+  "plz",
+  "ort"
+];
 
   if (blockedParts.some((part) => normalized.includes(part))) return false;
+
+  // Adresszeilen wie "78532 Tuttlingen" oder "Max-Planck-Str. 17" blocken
+if (/^\d{4,5}\s+[a-zäöüß]/i.test(text)) return false;
+if (/\b\d{4,5}\b/.test(text) && /straße|strasse|str\.|tuttlingen|karlsruhe/i.test(text)) return false;
+if (/^(d-)?\d{4,5}$/i.test(text)) return false;
 
   // Kaatsch-Kopfzeilen wie "CU 11260,-" oder "ALP 3050,-" nicht als Material importieren
   if (/^[A-ZÄÖÜ]{1,5}\s+\d/.test(text) && text.length < 18) return false;
