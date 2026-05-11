@@ -1,7 +1,7 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "3.6";
+  const APP_VERSION = "3.7";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -9052,6 +9052,13 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
 
  function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+   function saveStateRemote() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  setTimeout(() => {
+    saveAppStateToSupabase(state);
+  }, 0);
 }
   
 
