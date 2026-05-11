@@ -1,12 +1,14 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "3.2";
+  const APP_VERSION = "3.3";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
   const SUPABASE_TABLE = "bueroplan";
   const SUPABASE_ROW_ID = 1;
+  const APP_STATE_TABLE = "app_state";
+  const APP_STATE_ID = "main";
   const PRICE_LIST_BUCKET = "price-lists";
   const LOCAL_FILES_DB = "regu_local_files";
   const LOCAL_FILES_DB_VERSION = 3;
@@ -9132,6 +9134,25 @@ async function saveOfficePlanToSupabase() {
   }
 }
 
+   async function loadAppStateFromSupabase() {
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from(APP_STATE_TABLE)
+    .select("data")
+    .eq("id", APP_STATE_ID)
+    .single();
+
+  if (error) {
+    console.error("Fehler beim Laden app_state:", error);
+    return null;
+  }
+
+  console.log("Geladene App-State Daten:", data);
+
+  return data?.data || null;
+}
+
 function buildOfficeCalendarPeople() {
   return (state.employees || [])
     .filter((employee) => employee.active && isBueroDept(employee.department))
@@ -10409,4 +10430,6 @@ function getTrashBadgeClass(summary) {
   if (text.includes("wertstoff")) return "trash-value";
   return "trash-generic";
 }
+
+   loadAppStateFromSupabase();
 })();
