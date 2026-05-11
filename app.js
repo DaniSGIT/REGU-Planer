@@ -1,7 +1,7 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "3.3";
+  const APP_VERSION = "3.4";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -9135,9 +9135,7 @@ async function saveOfficePlanToSupabase() {
 }
 
    async function loadAppStateFromSupabase() {
-  if (!supabase) return null;
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseClient
     .from(APP_STATE_TABLE)
     .select("data")
     .eq("id", APP_STATE_ID)
