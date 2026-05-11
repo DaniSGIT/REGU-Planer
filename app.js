@@ -9046,7 +9046,7 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
     } catch {
       return structuredClone(defaultData);
     }
-  };
+  }
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
