@@ -9050,12 +9050,13 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
     }
   }
 
- function saveState() {
+function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-   function saveStateRemote() {
+function saveStateRemote() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
   setTimeout(() => {
     saveAppStateToSupabase(state);
   }, 0);
