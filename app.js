@@ -1,7 +1,7 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "3.4";
+  const APP_VERSION = "3.5";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -9151,6 +9151,25 @@ async function saveOfficePlanToSupabase() {
   return data?.data || null;
 }
 
+   async function saveAppStateToSupabase(dataToSave) {
+  const { error } = await supabaseClient
+    .from(APP_STATE_TABLE)
+    .upsert({
+      id: APP_STATE_ID,
+      data: dataToSave,
+      updated_at: new Date().toISOString()
+    });
+
+  if (error) {
+    console.error("Fehler beim Speichern app_state:", error);
+    return false;
+  }
+
+  console.log("App-State gespeichert");
+
+  return true;
+}
+
 function buildOfficeCalendarPeople() {
   return (state.employees || [])
     .filter((employee) => employee.active && isBueroDept(employee.department))
@@ -10430,4 +10449,8 @@ function getTrashBadgeClass(summary) {
 }
 
    loadAppStateFromSupabase();
+   saveAppStateToSupabase({
+  test: "speichern funktioniert",
+  zeit: new Date().toISOString()
+});
 })();
