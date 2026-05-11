@@ -9049,8 +9049,34 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
   }
 
   function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(buildLocalStorageState()));
+  } catch (err) {
+    console.error("Lokaler Speicher voll oder blockiert:", err);
+    showToast?.("Speicher voll: Alte PDF-Daten bitte bereinigen.", "error");
   }
+}
+
+function buildLocalStorageState() {
+  const clean = structuredClone(state);
+
+  // Alte PDF/Base64-Reste nicht mehr in localStorage speichern.
+  if (clean.priceList) {
+    clean.priceList.pdfData = "";
+    clean.priceList.pdfPath = "";
+  }
+
+  (clean.priceLists || []).forEach((list) => {
+    list.pdfData = "";
+    list.pdfPath = "";
+  });
+
+  (clean.vehicles || []).forEach((vehicle) => {
+    vehicle.registrationPdfData = "";
+  });
+
+  return clean;
+}}
 
 async function loadOfficePlanFromSupabase() {
   try {
