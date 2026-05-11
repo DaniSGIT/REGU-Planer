@@ -1,7 +1,7 @@
 ﻿(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "3.1";
+  const APP_VERSION = "3.2";
 
   const SUPABASE_URL = "https://feqnxhlhycjqabwrpiqz.supabase.co";
   const SUPABASE_ANON_KEY = "sb_publishable_Fh1zTNMMeOGe5TBqgoAQ9Q_QJdw8qSu";
@@ -9049,37 +9049,11 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
   };
 
   function saveState() {
-  try {
-    const cleanState = buildLocalStorageState();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanState));
-  } catch (err) {
-    console.error("Lokaler Speicher voll oder blockiert:", err);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
-}
+  
 
-function buildLocalStorageState() {
-  const clean = JSON.parse(JSON.stringify(state));
 
-  if (clean.priceList) {
-    clean.priceList.pdfData = "";
-    clean.priceList.pdfPath = "";
-  }
-
-  if (Array.isArray(clean.priceLists)) {
-    clean.priceLists.forEach((list) => {
-      list.pdfData = "";
-      list.pdfPath = "";
-    });
-  }
-
-  if (Array.isArray(clean.vehicles)) {
-    clean.vehicles.forEach((vehicle) => {
-      vehicle.registrationPdfData = "";
-    });
-  }
-
-  return clean;
-}
 
 function buildLocalStorageState() {
   const clean = structuredClone(state);
