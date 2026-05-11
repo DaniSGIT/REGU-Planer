@@ -9053,29 +9053,6 @@ pdfRemoveBtn.classList.toggle("hidden", !hasVehiclePdf);
   }
   
 
-
-
-function buildLocalStorageState() {
-  const clean = structuredClone(state);
-
-  // Alte PDF/Base64-Reste nicht mehr in localStorage speichern.
-  if (clean.priceList) {
-    clean.priceList.pdfData = "";
-    clean.priceList.pdfPath = "";
-  }
-
-  (clean.priceLists || []).forEach((list) => {
-    list.pdfData = "";
-    list.pdfPath = "";
-  });
-
-  (clean.vehicles || []).forEach((vehicle) => {
-    vehicle.registrationPdfData = "";
-  });
-
-  return clean;
-}}
-
 async function loadOfficePlanFromSupabase() {
   try {
     const { data, error } = await supabaseClient
