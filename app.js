@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
   const APP_VERSION = "4.1";
@@ -246,6 +246,7 @@ async function startAppAfterLogin() {
   hideLoginScreen();
 
   currentUserProfile = await loadCurrentUserProfile();
+
   await loadAppStateFromSupabase();
 
   ensureVacationCarryoversUpToDate();
@@ -264,10 +265,6 @@ async function startAppAfterLogin() {
   bindPriceList();
   bindSettings();
   bindWasteCalendar();
-
-  renderAll();
-
-  await loadOfficePlanFromSupabase();
 
   applyRoleUi();
   renderAll();
