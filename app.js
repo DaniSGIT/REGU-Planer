@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
   const APP_VERSION = "4.1.1";
@@ -1126,7 +1126,7 @@ function bindHofbook() {
     }, 80);
   });
 
-  $("#hofbookOpenEntryModalBtn")?.addEventListener("click", openHofbookEntryModal);
+  $("#hofbookOpenEntryModalBtn")?.addEventListener("click", () => openHofbookEntryModal());
 $("#hofbookEntryCancel")?.addEventListener("click", closeHofbookEntryModal);
 $("#hofbookEntryCancelX")?.addEventListener("click", closeHofbookEntryModal);
 $("#hofbookEntrySave")?.addEventListener("click", saveHofbookModalEntry);
@@ -1186,6 +1186,7 @@ $("#hofbookMoveModal")?.addEventListener("click", (event) => {
 }
 
 function openHofbookEntryModal(editId = "") {
+  if (typeof editId !== "string") editId = "";
   const modal = $("#hofbookEntryModal");
   const typeInput = $("#hofbookModalType");
   const timeInput = $("#hofbookModalTime");
