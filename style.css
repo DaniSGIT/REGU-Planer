@@ -7209,3 +7209,111 @@ main > *{
     transform:translateX(0) rotateY(0deg) scale(1);
   }
 }
+
+/* =========================================================
+   REGU-Planer 4.1.1 Layout-Hotfix
+   Anhängen GANZ UNTEN in deine aktuelle style.css
+   Fix: Tabs bleiben rechts im Content-Bereich neben der Sidebar.
+   ========================================================= */
+
+#app{
+  min-height:100vh;
+  padding:20px;
+}
+
+.app-shell{
+  display:grid !important;
+  grid-template-columns:280px minmax(0,1fr) !important;
+  align-items:stretch !important;
+  gap:0 !important;
+  min-height:calc(100vh - 40px);
+  background:#171b20;
+  border-radius:32px;
+  box-shadow:0 24px 55px rgba(12,14,18,.24);
+  overflow:hidden;
+}
+
+.sidebar{
+  grid-column:1;
+  grid-row:1;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+  padding:22px 18px 22px 20px;
+  background:transparent;
+  color:#fff;
+  position:sticky;
+  top:20px;
+  height:calc(100vh - 40px);
+  align-self:start;
+  z-index:2;
+}
+
+.content-shell{
+  grid-column:2;
+  grid-row:1;
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  width:100%;
+  background:transparent;
+}
+
+.content-shell > main{
+  display:block;
+  min-width:0;
+  width:100%;
+  padding:24px;
+}
+
+.content-shell .tab-panel{
+  display:none;
+  width:100%;
+  min-width:0;
+}
+
+.content-shell .tab-panel.active{
+  display:block;
+}
+
+.content-shell .settings-layout,
+.content-shell .stats-layout,
+.content-shell .dashboard-grid,
+.content-shell .container-layout,
+.content-shell .hofbook-layout,
+.content-shell .price-module{
+  width:100%;
+  min-width:0;
+}
+
+.content-shell .panel,
+.content-shell .full-width-panel{
+  max-width:100%;
+}
+
+@media (max-width:1200px){
+  .app-shell{
+    grid-template-columns:1fr !important;
+    gap:16px !important;
+    background:transparent;
+    box-shadow:none;
+    overflow:visible;
+  }
+
+  .sidebar,
+  .content-shell{
+    grid-column:1;
+    grid-row:auto;
+  }
+
+  .sidebar{
+    position:static;
+    height:auto;
+    border-radius:28px;
+    background:#171b20;
+  }
+
+  .content-shell > main{
+    padding:20px 0 0;
+  }
+}
