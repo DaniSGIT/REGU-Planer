@@ -1,7 +1,7 @@
 (function () {
   const STORAGE_KEY = "regu_personal_data_v6";
 
-  const APP_VERSION = "4.1.1";
+  const APP_VERSION = "4.1.2";
 
   const APP_CHANGELOG = [
     "Remote-Speicherungsupdate.",
