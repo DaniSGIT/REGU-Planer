@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>REGU-Personal</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#e31010">
+</head>
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
+</script>
+<body>
+  <div id="loginScreen" class="login-screen">
+  <form id="loginForm" class="login-box">
+    <img src="regu_logo.png" alt="REGU Logo">
+    <h2>REGU-Planer Login</h2>
+
+    <label>
+      <span>E-Mail</span>
+      <input id="loginEmail" type="email" autocomplete="username" required>
+    </label>
+
+    <label>
+      <span>Passwort</span>
+      <input id="loginPassword" type="password" autocomplete="current-password" required>
+    </label>
+
+    <button type="submit">Einloggen</button>
+    <p id="loginError" class="login-error"></p>
+  </form>
+</div>
+  <div id="app">
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <img src="regu_logo.png" alt="REGU Logo" class="brand-logo">
+          <div class="brand-copy">
+            <h1></h1>
+            <p class="hero-subtitle"></p>
+          </div>
+        </div>
+        <nav class="sidebar-nav tabs">
+          <button class="tab active" data-tab="dashboard">Dashboard</button>
+          <button class="tab" data-tab="anwesenheit">Tageserfassung</button>
+          <button class="tab" data-tab="buero">Büroplan</button>
+          <button class="tab" data-tab="stundenabrechnung">Stundenabrechnung</button>
+          <button class="tab" data-tab="notizen">Notizen &amp; Termine</button>
+          <button class="tab" data-tab="fahrzeuge">Fahrzeuge</button>
+          <button class="tab" data-tab="urlaubsplan">Urlaubsplanung</button>
+          <button class="tab" data-tab="statistik">Statistik</button>
+          <button class="tab" data-tab="mitarbeiterdaten">Mitarbeiterdaten</button>
+          <button class="tab" data-tab="einstellungen">Einstellungen</button>
+        </nav>
+      </aside>
+
+      <div class="content-shell">
+        <header class="topbar">
+          <div class="topbar-main">
+            <div class="topbar-tools">
+              <div class="topbar-utility">
+                <div class="version-badge">Version 4.1.5</div>
+                <button id="backupExportBtn" class="ghost">Backup exportieren</button>
+                <label class="file-button ghost">
+                  Backup importieren
+                  <input type="file" id="backupImportInput" accept=".json,application/json" hidden>
+                </label>
+                <button id="remoteReloadBtn" class="ghost" type="button">Daten neu laden</button>
+              </div>
+              <div class="topbar-tabbar">
+                <button class="tab topbar-tab" data-tab="preislisten">Preislisten</button>
+                <button class="tab topbar-tab" data-tab="container">Container</button>
+                <button class="tab topbar-tab" data-tab="hofbuch">Hofbuch</button>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main>
+      <section id="dashboard" class="tab-panel active">
+        <div class="dashboard-grid">
+          <article class="panel full-width-panel dashboard-cockpit-panel">
+            <div id="headerStatusCards" class="header-status-grid"></div>
+          </article>
+          <article class="panel full-width-panel dashboard-command-panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Command Center</h2>
+                <p class="muted">Schnelle Wege zu den wichtigsten Bereichen</p>
+              </div>
+            </div>
+            <div id="dashboardCommandCards" class="command-card-grid"></div>
+          </article>
+
+          <!-- Notizen-Unterabschnitt (Punkt 9) -->
+          <article class="panel full-width-panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Notizen</h2>
+                <p class="muted">Offene Notizen und Übergaben</p>
+              </div>
+            </div>
+            <div id="dashboardNotes" class="important-grid wide"></div>
+          </article>
+
+          <!-- Fahrzeuge-Unterabschnitt (Punkt 10) -->
+          <article class="panel full-width-panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Fahrzeuge</h2>
+                <p class="muted">Fristen und Termine der Fahrzeuge</p>
+              </div>
+            </div>
+            <div id="dashboardVehicles" class="important-grid wide"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="anwesenheit" class="tab-panel">
+        <div class="panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Anwesenheit</h2>
+            <p class="muted">Ein Tag, alle Mitarbeiter.</p>
+          </div>
+
+          <div class="toolbar">
+            <button id="prevAttendanceMonthBtn" class="ghost">« Monat</button>
+            <button id="prevAttendanceDayBtn" class="ghost">◀</button>
+            <div id="attendanceMonthTitle" class="period-title"></div>
+            <input id="attendanceDayInput" type="date" hidden />
+            <button id="nextAttendanceDayBtn" class="ghost">▶</button>
+            <button id="nextAttendanceMonthBtn" class="ghost">Monat »</button>
+            <button id="todayAttendanceBtn" class="ghost">Aktueller Monat</button>
+          </div>
+        </div>
+
+        <div class="vacation-range">
+          <select id="bulkEmployee">
+            <option value="">Mitarbeiter wählen</option>
+          </select>
+
+          <select id="bulkStatus">
+            <option value="U">Urlaub</option>
+            <option value="K">Krank</option>
+          </select>
+
+          <input type="date" id="bulkFrom" />
+          <input type="date" id="bulkTo" />
+
+          <button id="setBulkRangeBtn" class="ghost">Für Zeitraum setzen</button>
+          <button id="removeBulkRangeBtn" class="ghost">Für Zeitraum entfernen</button>
+        </div>
+
+          <div class="daily-hints" id="dailyHints"></div>
+          <div id="dailyAttendanceBoard" class="daily-board"></div>
+        </div>
+      </section>
+
+      <section id="buero" class="tab-panel">
+        <div class="panel full-width-panel">
+          <div class="panel-header wrap">
+            <div>
+              <h2>Büroplan</h2>
+              <p class="muted">Normale Monatsansicht</p>
+            </div>
+            <div class="toolbar">
+              <button id="prevPeriodBtn" class="ghost">◀</button>
+              <div id="periodTitle" class="period-title"></div>
+              <button id="nextPeriodBtn" class="ghost">▶</button>
+              <button id="todayMonthBtn" class="ghost">Aktueller Monat</button>
+            </div>
+          </div>
+
+          <div id="hoursCounters" class="counter-grid compact-counters"></div>
+
+          <div class="weekday-header">
+            <div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div>
+          </div>
+          <div id="officeCalendarGrid" class="office-grid month-fit"></div>
+        </div>
+      </section>
+
+     <section id="preislisten" class="tab-panel">
+  <div class="price-module">
+
+    <div class="price-module-hero panel">
+      <div>
+        <h2>Preislisten</h2>
+        <p class="muted">
+          REGU-Ankaufspreise und Historie.
+        </p>
+      </div>
+      
+    </div>
+
+    <div class="price-subtabs">
+      <button class="price-subtab active" data-price-tab="current">Aktuelle Preise</button>
+      <button class="price-subtab" data-price-tab="own-prices">Neue Liste</button>
+      <button class="price-subtab" data-price-tab="history">Preisentwicklung</button>
+    </div>
+
+    <div id="priceTabCurrent" class="price-subpanel active">
+  <div class="panel">
+    <div class="panel-header wrap">
+      <div>
+        <h2>Aktuelle Preise</h2>
+        
+      </div>
+    </div>
+
+    <div class="price-current-search-box">
+      <label>
+        <span>Material oder Artikelnummer suchen</span>
+        <input id="priceCurrentSearchInput" type="search" placeholder="z. B. 34, Zinn, Millberry, Kabel">
+      </label>
+    </div>
+
+    <div id="priceCurrentResults" class="price-current-results"></div>
+  </div>
+</div>
+
+    
+
+    <div id="priceTabOwnPrices" class="price-subpanel">
+      <div class="panel">
+        <div class="panel-header wrap">
+          <div>
+            <h2>Eigene REGU-Ankaufspreise</h2>
+            <p class="muted">Importiert nur das Blatt „Preisliste groß“. Die kleine Tischliste wird ignoriert.</p>
+          </div>
+        </div>
+
+        <div class="own-price-import-grid">
+  <div class="price-list-field price-list-upload-card">
+    <span>REGU-Preisliste Excel</span>
+    <label class="file-button ghost price-list-upload-button">
+      REGU-Liste auswählen
+      <input type="file" id="ownPriceExcelInput" accept=".xlsx,.xls" hidden>
+    </label>
+    <small id="ownPriceExcelName">Keine eigene Preisliste geladen</small>
+  </div>
+</div>
+
+        <div class="price-list-field price-list-upload-card">
+  <span>REGU-Preislisten Bulk</span>
+  <label class="file-button ghost price-list-upload-button">
+    Mehrere REGU-Listen auswählen
+    <input type="file" id="ownPriceBulkExcelInput" accept=".xlsx,.xls" multiple hidden>
+  </label>
+  <small id="ownPriceBulkExcelName">Keine Bulk-Dateien geladen</small>
+</div>
+
+        <div id="ownPriceSummary" class="price-import-summary"></div>
+
+<div class="own-price-current-box">
+  <div class="panel-header wrap">
+    <div>
+      <h3>Aktuelle eigene Preisliste</h3>
+      <p class="muted">Das ist der aktuell verwendete REGU-Ankaufspreis-Stand.</p>
+    </div>
+  </div>
+  <div id="ownPriceEntries" class="own-price-entries"></div>
+</div>
+
+
+         </div>
+    </div>
+    
+
+    <div id="priceTabHistory" class="price-subpanel">
+  <div class="panel">
+    <div class="panel-header wrap">
+      <div>
+        <h2>Historie</h2>
+        <p class="muted">Preisentwicklung und alte eigene REGU-Ankaufspreislisten.</p>
+      </div>
+    </div>
+
+    <div class="price-history-tools">
+  <label class="price-list-field">
+    <span>Material für Chart</span>
+    <select id="ownPriceHistoryMaterialSelect">
+      <option value="">Material wählen</option>
+    </select>
+  </label>
+
+  <label class="price-list-field">
+    <span>Von Monat</span>
+    <input id="ownPriceHistoryFromMonth" type="month">
+  </label>
+
+  <label class="price-list-field">
+    <span>Bis Monat</span>
+    <input id="ownPriceHistoryToMonth" type="month">
+  </label>
+
+  <button id="ownPriceHistoryResetRangeBtn" class="ghost" type="button">Gesamter Zeitraum</button>
+</div>
+
+<div class="own-price-chart-card">
+  <canvas id="ownPriceHistoryChart" width="1000" height="360"></canvas>
+</div>
+
+<div id="ownPriceHistoryDetail" class="own-price-history-detail hidden"></div>
+
+<div id="ownPriceHistoryList" class="own-price-history-list"></div>
+  </div>
+</div>
+
+    
+
+  </div>
+</section>
+<section id="hofbuch" class="tab-panel">
+  <div class="hofbook-layout">
+
+    <article class="panel full-width-panel hofbook-hero">
+      <div class="panel-header wrap">
+        <div>
+          <h2>Hofbuch</h2>
+        </div>
+      </div>
+
+      <div class="hofbook-nav">
+  <button id="hofbookPrevBtn" class="ghost">◀</button>
+  <button id="hofbookTodayBtn" class="ghost">Heute</button>
+  <button id="hofbookNextBtn" class="ghost">▶</button>
+
+  <label class="hofbook-date-jump">
+    <span>Datum</span>
+    <input id="hofbookDateInput" type="date">
+  </label>
+
+  <button id="hofbookOpenEntryModalBtn" class="hofbook-plus-btn" type="button" title="Eintrag hinzufügen">+</button>
+</div>
+
+      <div id="hofbookDayTitle" class="hofbook-day-title"></div>
+    </article>
+
+        
+    
+
+    <article class="panel full-width-panel hofbook-paper-panel">
+  <div id="hofbookPaper" class="hofbook-paper"></div>
+</article>
+
+<article class="panel full-width-panel hofbook-search-panel">
+      <div class="hofbook-search-grid">
+        <label class="hofbook-search-field">
+          <span>Hofbuch durchsuchen</span>
+          <input id="hofbookSearchInput" type="search" placeholder="z. B. Schuler, IFM, Späne, April">
+        </label>
+
+        <label>
+          <span>Von</span>
+          <input id="hofbookSearchFromInput" type="date">
+        </label>
+
+        <label>
+          <span>Bis</span>
+          <input id="hofbookSearchToInput" type="date">
+        </label>
+
+        <label>
+          <span>Art</span>
+          <select id="hofbookSearchTypeSelect">
+            <option value="all">Alle</option>
+            <option value="container">Bestellungen</option>
+            <option value="hint">Hinweise</option>
+            <option value="open">Offen</option>
+            <option value="done">Erledigt</option>
+          </select>
+        </label>
+
+        <button id="hofbookSearchClearBtn" class="ghost" type="button">Leeren</button>
+      </div>
+
+      <div id="hofbookSearchSummary" class="hofbook-search-summary"></div>
+      <div id="hofbookSearchResults" class="hofbook-search-results"></div>
+    </article>
+
+  </div>
+</section>
+
+      <section id="container" class="tab-panel">
+  <div class="container-layout">
+
+    <article class="panel full-width-panel container-search-panel">
+      <div class="panel-header wrap">
+        <div>
+          <h2>Container</h2>
+          <p class="muted">Excel importieren, Container suchen und Prüfungen verwalten.</p>
+        </div>
+      </div>
+
+      <div class="container-toolbar">
+        <label class="file-button ghost">
+          Excel importieren
+          <input type="file" id="containerExcelImportInput" accept=".xlsx,.xls" hidden>
+        </label>
+
+        <button id="containerExcelExportBtn" class="ghost" type="button">Excel exportieren</button>
+
+        <button id="containerFilterOverdueBtn" class="ghost" type="button">🔴 Überfällig</button>
+        <button id="containerFilterThisMonthBtn" class="ghost" type="button">🟡 Dieser Monat</button>
+        <button id="containerClearListBtn" class="ghost" type="button">📋 Liste leeren</button>
+
+        <select id="containerPeriodSelect" title="Prüfzeitraum">
+          <option value="overdue">Überfällig</option>
+          <option value="thisMonth">Dieser Monat</option>
+          <option value="nextMonth" selected>Nächster Monat</option>
+          <option value="next3">Nächste 3 Monate</option>
+          <option value="next6">Nächste 6 Monate</option>
+          <option value="next12">Nächste 12 Monate</option>
+          <option value="allWithDate">Alle mit Prüfdatum</option>
+        </select>
+
+        <button id="containerShowPeriodBtn" class="ghost" type="button">Prüfungen anzeigen</button>
+        <button id="containerExportPeriodBtn" class="ghost" type="button">Prüfungen exportieren</button>
+      </div>
+
+      <div class="container-search-grid">
+        <label>
+          <span>Nummer suchen</span>
+          <input id="containerSearchNumberInput" type="search" placeholder="Nummer">
+        </label>
+
+        <label>
+          <span>Gewicht suchen</span>
+          <input id="containerSearchWeightInput" type="search" placeholder="Gewicht">
+        </label>
+
+        <button id="containerSearchBtn" type="button">Suchen</button>
+      </div>
+    </article>
+
+    <article class="panel full-width-panel container-table-panel">
+      <div class="panel-header wrap">
+        <div>
+          <h2>Containerliste</h2>
+          <p id="containerListInfo" class="muted">Noch keine Container geladen.</p>
+        </div>
+      </div>
+
+      <div class="container-table-wrap">
+        <table class="container-table">
+          <thead>
+            <tr>
+              <th>Nummer</th>
+              <th>Gewicht</th>
+              <th>Prüfdatum</th>
+              <th>Nächste Prüfung</th>
+              <th>m³</th>
+              <th>Baujahr</th>
+              <th>Notiz</th>
+            </tr>
+          </thead>
+          <tbody id="containerTableBody"></tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="panel full-width-panel container-edit-panel">
+      <div class="panel-header wrap">
+        <div>
+          <h2>Container bearbeiten</h2>
+          <p class="muted">Doppelklick auf eine Zeile lädt den Container hier rein.</p>
+        </div>
+      </div>
+
+      <div class="container-edit-grid">
+        <label>
+          <span>Nummer</span>
+          <input id="containerEditNumberInput" type="text" placeholder="Nummer">
+        </label>
+
+        <label>
+          <span>Gewicht</span>
+          <input id="containerEditWeightInput" type="text" placeholder="Gewicht">
+        </label>
+
+        <label>
+          <span>Prüfdatum</span>
+          <input id="containerEditInspectionInput" type="text" placeholder="z. B. 31.03.2026">
+        </label>
+
+        <label>
+          <span>m³</span>
+          <input id="containerEditM3Input" type="text" placeholder="m³">
+        </label>
+
+        <label>
+          <span>Baujahr</span>
+          <input id="containerEditYearInput" type="text" placeholder="Baujahr">
+        </label>
+
+        <label class="container-note-field">
+          <span>Notiz</span>
+          <input id="containerEditNoteInput" type="text" placeholder="Notiz">
+        </label>
+      </div>
+
+      <div class="container-action-row">
+        <button id="containerAddBtn" type="button">Hinzufügen</button>
+        <button id="containerUpdateBtn" class="ghost" type="button">Bearbeiten</button>
+        <button id="containerDeleteBtn" class="danger" type="button">Löschen</button>
+        <button id="containerInspectionDoneBtn" class="ghost" type="button">Prüfung erledigt</button>
+        <button id="containerInspectionBackdateBtn" class="ghost" type="button">Prüfung nachtragen</button>
+        <button id="containerEditClearBtn" class="ghost" type="button">Felder leeren</button>
+      </div>
+    </article>
+
+  </div>
+</section>
+
+      <section id="stundenabrechnung" class="tab-panel">
+        <div class="panel full-width-panel">
+          <div class="panel-header wrap">
+            <div>
+              <h2>Stundenabrechnung</h2>
+              <p class="muted">Ungefähre Stunden für Arbeits-, Urlaubs- und Kranktage</p>
+            </div>
+            <div class="toolbar">
+              <button id="prevHoursBillingMonthBtn" class="ghost">◀</button>
+              <div id="hoursBillingTitle" class="period-title"></div>
+              <button id="nextHoursBillingMonthBtn" class="ghost">▶</button>
+              <button id="todayHoursBillingBtn" class="ghost">Aktuelle Abrechnung</button>
+            </div>
+          </div>
+
+          <label class="hours-billing-done">
+            <input type="checkbox" id="hoursBillingDoneCheckbox">
+            Stundenabrechnung erledigt
+          </label>
+
+          <div class="hours-billing-subtabs">
+  <button class="hours-billing-subtab active" data-hours-tab="overview">Übersicht</button>
+  <button class="hours-billing-subtab" data-hours-tab="tax">Steuerberater</button>
+</div>
+<div id="hoursBillingOverviewPanel" class="hours-billing-subpanel active">
+          <div class="table-wrap">
+            <table class="data-table hours-billing-table">
+              <thead>
+                <tr>
+                  <th>Mitarbeiter</th>
+                  <th>Arbeitstage 9 Std</th>
+                  <th>Samstag 4 Std</th>
+                  <th>Feiertage</th>
+                  <th>Urlaub</th>
+                  <th>Krank</th>
+                  <th>Gesamt</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="hoursBillingBody"></tbody>
+            </table>
+          </div>
+          
+          <div id="hoursBillingCards" class="hours-billing-cards"></div>
+          </div>
+
+<div id="hoursBillingTaxPanel" class="hours-billing-subpanel">
+  <div class="tax-hours-head">
+    <h3>Steuerberater-Zettel</h3>
+    <p class="muted">Stempelkarten eintragen, Urlaub/Feiertage zählen, gerundete Stunden kopieren.</p>
+  </div>
+
+    <div class="tax-advisor-box">
+  <label>
+    <span>Anschrift Steuerberater</span>
+    <textarea id="taxAdvisorAddressInput" rows="4" placeholder="Name&#10;Straße&#10;PLZ Ort"></textarea>
+  </label>
+
+  <button id="taxHoursPdfBtn" class="ghost" type="button">PDF / Druckansicht erstellen</button>
+</div>
+
+  <div id="taxHoursRows" class="tax-hours-list"></div>
+
+  <div class="tax-hours-output">
+    <div class="tax-hours-output-head">
+      <strong>Ausgabe für Steuerberater</strong>
+      <button id="copyTaxHoursBtn" class="ghost" type="button">Kopieren</button>
+    </div>
+
+    <textarea id="taxHoursOutput" rows="8" readonly></textarea>
+  </div>
+</div>
+          
+        </div>
+      </section>
+
+      <section id="statistik" class="tab-panel">
+        <div class="stats-layout">
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Monatsstatistik</h2>
+                <p class="muted">Visuelle Übersicht des ausgewählten Monats</p>
+              </div>
+              <div class="toolbar">
+                <button id="prevStatsMonthBtn" class="ghost">◀</button>
+                <div id="statsMonthTitle" class="period-title"></div>
+                <button id="nextStatsMonthBtn" class="ghost">▶</button>
+                <button id="exportMonthlyStatsBtn" class="ghost">CSV Monatsstatistik</button>
+              </div>
+            </div>
+            <div id="monthlyStatsCharts" class="kpi-grid six-col"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Jahresstatistik</h2>
+                <p class="muted">Kalenderjahr</p>
+              </div>
+              <div class="toolbar">
+                <select id="yearSelect"></select>
+                <button id="exportYearlyStatsBtn" class="ghost">CSV Jahresstatistik</button>
+              </div>
+            </div>
+            <div id="yearlyStatsCharts" class="kpi-grid six-col"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="mitarbeiterdaten" class="tab-panel">
+        <div class="settings-layout">
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Mitarbeiterdaten</h2>
+                <p class="muted">Stammdaten, Urlaubstage und Geburtstage</p>
+              </div>
+              <button id="addEmployeeBtn">Mitarbeiter hinzufügen</button>
+            </div>
+            <div class="settings-note">
+              Urlaub pro Jahr und Resturlaub aus dem Vorjahr werden hier gepflegt. Der Resturlaub wird beim Jahreswechsel automatisch übernommen.
+            </div>
+            <input id="employeeSearchInput" type="search" placeholder="Mitarbeiter suchen">
+            <div id="employeesAdminList" class="cards-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="fahrzeuge" class="tab-panel">
+        <div class="settings-layout">
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Fahrzeuge</h2>
+                <p class="muted"></p>
+              </div>
+              <button id="addVehicleBtn">Fahrzeug hinzufügen</button>
+            </div>
+            <div class="settings-note">
+              Fristen werden im Dashboard als Hinweis angezeigt.
+            </div>
+            <div id="vehicleTypeTabs" class="vehicle-type-tabs"></div>
+            <div id="vehicleDeadlinesSummary" class="vehicle-deadline-summary"></div>
+            <div id="vehiclesAdminList" class="cards-list"></div>
+          </article>
+        </div>
+      </section>
+
+      <section id="urlaubsplan" class="tab-panel">
+        <div class="panel full-width-panel">
+          <div class="panel-header wrap">
+            <div>
+              <h2>Urlaubsplanung</h2>
+              <p class="muted">Ganzjahresübersicht für Urlaub</p>
+            </div>
+            <div class="toolbar">
+              <select id="vacationPlanYearSelect"></select>
+              <select id="vacationPlanBossSelect"></select>
+              <button id="todayVacationPlanBtn" class="ghost">Aktuelles Jahr</button>
+            </div>
+          </div>
+
+          <div class="daily-hints" id="vacationPlanHints">
+            <span class="pill blank">Leer</span>
+            <span class="pill" style="background:#eaf2ff;color:#3b82f6">Urlaub</span>
+            <span class="pill so">Sonntag</span>
+            <span class="pill f">Feiertag</span>
+          </div>
+
+          <div id="vacationPlanGrid" class="vacation-year-grid"></div>
+        </div>
+      </section>
+
+<section id="notizen" class="tab-panel">
+        <div class="settings-layout">
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Notizen &amp; Übergaben</h2>
+              </div>
+              <button id="addNoteBtn">Notiz hinzufügen</button>
+            </div>
+            <div class="settings-note">
+              Beim Start werden offene Notizen automatisch angezeigt.
+            </div>
+            <div id="notesAdminList" class="cards-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Wichtige Termine</h2>
+              </div>
+              <button id="addEventBtn">Termin hinzufügen</button>
+            </div>
+            <div id="eventsAdminList" class="cards-list"></div>
+          </article>
+        </div>
+      </section>
+
+<section id="einstellungen" class="tab-panel">
+        <div class="settings-layout">
+          <article class="panel">
+            <div class="panel-header"><h2>Büroplan Einstellungen</h2></div>
+            <div class="settings-toggle-row">
+              <label class="toggle-label">
+                <input type="checkbox" id="sundaysEditableToggle"> Sonntage im Büroplan bearbeitbar
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="holidaysEditableToggle"> Feiertage im Büroplan bearbeitbar
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="officeSecondPersonToggle"> 2. Person im Büroplan aktivieren
+              </label>
+              <label class="toggle-label">
+                <input type="checkbox" id="officeSpecialModeToggle"> Sondertage-Dropdown im Büroplan aktivieren
+              </label>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header"><h2>Exporte</h2></div>
+            <div class="export-grid ics-range-grid">
+              <input id="icsExportFrom" type="date" title="ICS von">
+              <input id="icsExportTo" type="date" title="ICS bis">
+            </div>
+            <div class="export-grid">
+              <button id="exportOfficePlanBtn">CSV Büroplan</button>
+              <button id="exportAttendanceBtn">CSV Anwesenheiten</button>
+              <button id="exportYesimIcsBtn">ICS Yesim</button>
+              <button id="exportDanielaIcsBtn">ICS Daniela</button>
+              <button id="exportVehiclesCsvBtn">CSV Fahrzeuge</button>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Geschäftsführung</h2>
+                <p class="muted">Geburtstage und Notizen</p>
+              </div>
+              <button id="addExternalBirthdayBtn">Geburtstag hinzufügen</button>
+            </div>
+            <div id="externalBirthdaysList" class="cards-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header wrap">
+              <div>
+                <h2>Müllkalender</h2>
+              </div>
+            </div>
+
+            <div class="export-grid">
+              <label class = "file-button ghost">
+                ICS-Datei auswählen 
+                <input type="file" id="wasteIcalFileInput" accept=".ics,text/calendar" hidden>
+              </label>
+            </div>
+
+            <div class="settings-note" id="wasteLastUpdate"></div>
+          </article>
+        </div>
+      </section>
+        </main>
+      </div>
+    </div>
+  </div>
+
+  <template id="employeeCardTemplate">
+    <div class="admin-row employee-admin-row">
+      <button class="drag-handle" type="button" title="Reihenfolge ändern" aria-label="Reihenfolge ändern">⋮⋮</button>
+      <input data-field="name" type="text" placeholder="Chef / Chefin" readonly>
+      <input data-field="department" type="text" placeholder="Bereich" readonly>
+      <input data-field="phone" type="text" placeholder="Telefon" readonly>
+      <input data-field="entryDate" type="text" title="Eintrittsdatum" readonly>
+      <input data-field="birthday" type="text" title="Geburtstag" readonly>
+      <input data-field="active" type="text" placeholder="Status" readonly>
+      <input data-field="vacationAllowance" type="text" placeholder="Urlaub pro Jahr" readonly>
+      <input data-field="vacationCarryover" type="text" placeholder="Resturlaub Vorjahr" readonly>
+      <button class="ghost" data-action="edit">Bearbeiten</button>
+    </div>
+  </template>
+
+  <template id="eventCardTemplate">
+    <div class="admin-row event-row">
+      <input data-field="title" type="text" placeholder="Titel" readonly>
+      <input data-field="date" type="text" placeholder="Datum" readonly>
+      <input data-field="type" type="text" placeholder="Typ" readonly>
+      <input data-field="notes" type="text" placeholder="Notiz" readonly>
+      <button class="ghost" data-action="edit">Bearbeiten</button>
+    </div>
+  </template>
+
+  <template id="vehicleCardTemplate">
+    <div class="vehicle-card">
+      <div class="vehicle-card-top">
+        <div class="vehicle-card-title-row">
+          <input data-field="name" type="text" placeholder="Fahrzeug / Kennzeichen" readonly>
+          <span class="vehicle-type-badge" data-role="type-badge"></span>
+        </div>
+        <div class="vehicle-card-grid" data-role="fields"></div>
+        <button class="ghost vehicle-inline-pdf hidden" type="button" data-action="open-pdf" title="Fahrzeugschein öffnen" aria-label="Fahrzeugschein öffnen">
+          <img src="assets/file-pdf.svg" alt="" aria-hidden="true">
+        </button>
+      </div>
+      <div class="vehicle-card-actions">
+        <button class="ghost" type="button" data-action="edit">Bearbeiten</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="externalBirthdayTemplate">
+    <div class="admin-row external-birthday-row">
+      <input data-field="name" type="text" placeholder="Name" readonly>
+      <input data-field="birthday" type="text" placeholder="Geburtstag" readonly>
+      <input data-field="phone" type="text" placeholder="Telefonnummer" readonly>
+      <button class="ghost" data-action="edit">Bearbeiten</button>
+    </div>
+  </template>
+
+  <template id="noteCardTemplate">
+    <div class="note-card-row">
+      <div class="note-card-fields">
+        <input data-field="title" type="text" placeholder="Titel / Betreff">
+        <input data-field="date" type="date">
+      </div>
+      <textarea data-field="content" placeholder="Notiz oder Übergabe-Text..." rows="3"></textarea>
+      <div class="note-card-checkboxes">
+        <label class="note-checkbox-label">
+          <input type="checkbox" data-field="showInDashboard" checked>
+          Im Dashboard anzeigen
+        </label>
+        <label class="note-checkbox-label">
+          <input type="checkbox" data-field="showAsPopup" checked>
+          Als Pop-up beim Start anzeigen
+        </label>
+      </div>
+      <div class="note-card-actions">
+        <button class="ghost" data-action="save">Speichern</button>
+        <button class="danger" data-action="delete">Löschen</button>
+      </div>
+    </div>
+  </template>
+
+  <div id="confirmModal" class="confirm-modal hidden">
+    <div class="confirm-box">
+      <p id="confirmText">Wirklich löschen?</p>
+      <div class="confirm-actions">
+        <button id="confirmCancel" class="ghost">Abbrechen</button>
+        <button id="confirmOk" class="danger">Löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="notesStartupModal" class="confirm-modal hidden">
+    <div class="confirm-box notes-startup-box">
+      <h3>📋 Offene Notizen &amp; Übergaben</h3>
+      <div id="notesStartupList"></div>
+      <div class="confirm-actions">
+        <button id="notesStartupClose" class="ghost">Schließen</button>
+        <button id="notesStartupGoTo">Zu den Notizen</button>
+      </div>
+    </div>
+  </div>
+
+<div id="hofbookEntryModal" class="confirm-modal hidden">
+  <div class="confirm-box hofbook-entry-box">
+    <div class="hofbook-entry-box-head">
+      <div>
+        <span class="modal-eyebrow">Hofbuch</span>
+        <h3>Eintrag hinzufügen</h3>
+      </div>
+
+      <button id="hofbookEntryCancelX" class="modal-x-btn" type="button">×</button>
+    </div>
+
+    <div class="hofbook-entry-fields">
+      <label>
+        <span>Art</span>
+        <select id="hofbookModalType">
+          <option value="container">Bestellung</option>
+          <option value="hint">Hinweis</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Datum</span>
+        <input id="hofbookModalDate" type="date">
+      </label>
+
+      <label class="hofbook-entry-text-field">
+        <span>Eintrag</span>
+        <textarea id="hofbookModalText" rows="4"></textarea>
+      </label>
+    </div>
+
+    <div class="confirm-actions">
+      <button id="hofbookEntryCancel" class="ghost" type="button">Abbrechen</button>
+      <button id="hofbookEntrySave" type="button">Eintragen</button>
+    </div>
+  </div>
+</div>
+
+<div id="hofbookMoveModal" class="confirm-modal hidden">
+  <div class="confirm-box hofbook-entry-box">
+    <div class="hofbook-entry-box-head">
+      <div>
+        <span class="modal-eyebrow">Hofbuch</span>
+        <h3>Bestellung verschieben</h3>
+      </div>
+
+      <button id="hofbookMoveCancelX" class="modal-x-btn" type="button">×</button>
+    </div>
+
+    <div class="hofbook-entry-fields">
+      <label>
+        <span>Neues Datum</span>
+        <input id="hofbookMoveDateInput" type="date">
+      </label>
+    </div>
+
+    <div class="confirm-actions">
+      <button id="hofbookMoveCancel" class="ghost" type="button">Abbrechen</button>
+      <button id="hofbookMoveSave" type="button">Verschieben</button>
+    </div>
+  </div>
+</div>
+  <div id="newPricesModal" class="confirm-modal hidden">
+    <div class="confirm-box price-date-box">
+      <div class="price-date-icon">!</div>
+      <h3>Neue Preise eintragen</h3>
+      <p>Ab welchem Datum gelten die neuen Preise?</p>
+      <input id="newPricesDateInput" type="date">
+      <div class="confirm-actions">
+        <button id="newPricesCancel" class="ghost">Abbrechen</button>
+        <button id="newPricesSave">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div id="updateModal" class="confirm-modal hidden">
+    <div class="confirm-box update-box">
+      <div class="update-box-icon">↑</div>
+      <div class="update-box-copy">
+        <span class="update-box-eyebrow">Update verfügbar</span>
+        <h3>Neue Version installieren</h3>
+        <p id="updateModalText">Vor dem Aktualisieren wird automatisch ein Backup heruntergeladen.</p>
+      </div>
+      <div class="update-box-note">
+        <div>Automatisches Backup vor dem Neuladen</div>
+        <div>Danach wird Version <span id="updateModalVersion">1.7</span> geladen</div>
+      </div>
+      <details class="update-changelog">
+  <summary>Neuerungen</summary>
+  <ul id="updateChangelogList"></ul>
+</details>
+      <div class="confirm-actions update-box-actions">
+        <button id="updateModalCancel" class="ghost">Später</button>
+        <button id="updateModalConfirm">Jetzt aktualisieren</button>
+      </div>
+    </div>
+  </div>
+  <div id="externalBirthdayModal" class="confirm-modal hidden">
+    <div class="confirm-box boss-edit-box">
+      <h3>Geschäftsführung bearbeiten</h3>
+      <div class="boss-edit-fields">
+        <label>
+          <span>Name</span>
+          <input id="externalBirthdayNameInput" type="text" placeholder="Name">
+        </label>
+        <label>
+          <span>Geburtstag</span>
+          <input id="externalBirthdayDateInput" type="date" title="Geburtstag">
+        </label>
+        <label>
+          <span>Telefonnummer</span>
+          <input id="externalBirthdayPhoneInput" type="text" placeholder="Telefonnummer">
+        </label>
+      </div>
+      <div class="confirm-actions">
+        <button id="externalBirthdayDelete" class="danger">Löschen</button>
+        <button id="externalBirthdaySave">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div id="employeeEditModal" class="confirm-modal hidden">
+    <div class="confirm-box employee-edit-box">
+      <h3>Mitarbeiter bearbeiten</h3>
+      <div class="employee-edit-fields">
+        <label>
+          <span>Name</span>
+          <input id="employeeEditNameInput" type="text" placeholder="Name">
+        </label>
+        <label>
+          <span>Bereich</span>
+          <select id="employeeEditDepartmentInput">
+            <option value="Buero">Büro</option>
+            <option value="Lager">Lager</option>
+          </select>
+        </label>
+        <label>
+          <span>Telefon</span>
+          <input id="employeeEditPhoneInput" type="text" placeholder="Telefon">
+        </label>
+        <label>
+          <span>Eintrittsdatum</span>
+          <input id="employeeEditEntryDateInput" type="date" title="Eintrittsdatum">
+        </label>
+        <label>
+          <span>Geburtstag</span>
+          <input id="employeeEditBirthdayInput" type="date" title="Geburtstag">
+        </label>
+        <label>
+          <span>Status</span>
+          <select id="employeeEditActiveInput">
+            <option value="true">Aktiv</option>
+            <option value="false">Inaktiv</option>
+          </select>
+        </label>
+        <label>
+          <span>Urlaub pro Jahr</span>
+          <input id="employeeEditVacationAllowanceInput" type="number" min="0" placeholder="Urlaub pro Jahr">
+        </label>
+        <label>
+          <span>Resturlaub</span>
+          <input id="employeeEditVacationCarryoverInput" type="number" min="0" placeholder="Resturlaub Vorjahr">
+        </label>
+      </div>
+      <div class="confirm-actions">
+        <button id="employeeEditDelete" class="danger">Löschen</button>
+        <button id="employeeEditSave">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div id="eventEditModal" class="confirm-modal hidden">
+    <div class="confirm-box event-edit-box">
+      <h3>Wichtigen Termin bearbeiten</h3>
+      <div class="event-edit-fields">
+        <label>
+          <span>Titel</span>
+          <input id="eventEditTitleInput" type="text" placeholder="Titel">
+        </label>
+        <label>
+          <span>Datum</span>
+          <input id="eventEditDateInput" type="date">
+        </label>
+        <label>
+          <span>Typ</span>
+          <select id="eventEditTypeInput">
+            <option value="Veranstaltung">Veranstaltung</option>
+            <option value="Hinweis">Hinweis</option>
+            <option value="Abrechnung">Abrechnung</option>
+          </select>
+        </label>
+        <label class="event-edit-notes">
+          <span>Notiz</span>
+          <input id="eventEditNotesInput" type="text" placeholder="Notiz">
+        </label>
+      </div>
+      <div class="confirm-actions">
+        <button id="eventEditDelete" class="danger">Löschen</button>
+        <button id="eventEditSave">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div id="vehicleEditModal" class="confirm-modal hidden">
+    <div class="confirm-box vehicle-edit-box">
+      <h3>Fahrzeug bearbeiten</h3>
+      <div class="vehicle-edit-head">
+        <input id="vehicleEditNameInput" type="text" placeholder="Fahrzeug / Kennzeichen">
+        <span id="vehicleEditTypeBadge" class="vehicle-type-badge"></span>
+      </div>
+      <div id="vehicleEditFields" class="vehicle-edit-fields"></div>
+      <div class="vehicle-edit-pdf-row">
+        <button id="vehicleEditPdfButton" class="ghost vehicle-pdf-icon" type="button" title="PDF öffnen" aria-label="PDF öffnen">
+          <img src="assets/file-pdf.svg" alt="" aria-hidden="true">
+        </button>
+        <span id="vehicleEditPdfLabel" class="vehicle-edit-pdf-label">Kein Fahrzeugschein hinterlegt</span>
+        <button id="vehicleEditPdfAdd" class="ghost" type="button">PDF hinzufügen</button>
+        <button id="vehicleEditPdfRemove" class="ghost hidden" type="button">PDF entfernen</button>
+      </div>
+      <input id="vehicleEditPdfUpload" type="file" accept="application/pdf" hidden>
+      <div class="confirm-actions vehicle-edit-actions">
+        <button id="vehicleEditToggleActive" class="ghost" type="button"></button>
+        <button id="vehicleEditDelete" class="danger" type="button">Löschen</button>
+        <button id="vehicleEditSave" type="button">Speichern</button>
+      </div>
+    </div>
+  </div>
+  <div id="detailDrawer" class="detail-drawer hidden">
+    <div class="detail-drawer-backdrop" data-action="close-drawer"></div>
+    <aside class="detail-drawer-panel">
+      <button class="ghost detail-drawer-close" type="button" data-action="close-drawer">Schließen</button>
+      <div id="detailDrawerContent"></div>
+    </aside>
+  </div>
+  <div id="toastStack" class="toast-stack"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
