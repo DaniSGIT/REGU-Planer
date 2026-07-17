@@ -542,7 +542,7 @@ function getTaxFlatPayrollRows() {
   if (!String(entry.name || "").trim()) return [];
 
   return [{
-    personnelNumber: "",
+    personnelNumber: "53",
     name: String(entry.name || "").trim(),
     hours: String(entry.label || "pauschal").trim(),
     vacation: "",
